@@ -1,0 +1,22 @@
+server:
+  port: 24681
+  servlet:
+    session:
+      timeout: 2h
+
+spring:
+  application:
+    name: psychological-counseling-backend
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+app:
+  default-password: 123456
+
+# 当前骨架阶段先排除 DataSource 自动配置，后续接入 MySQL 时补充 datasource 配置并移除排除。

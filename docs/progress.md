@@ -18,7 +18,7 @@
 
 ### 当前状态
 
-后端仓库当前处于工程开发前状态，`docs/` 已具备可指导实现的详细设计。后续应先初始化 Spring Boot 工程和数据库脚本，再按模块逐步实现接口。
+后端仓库已完成最小可启动骨架初始化，包含 Spring Boot、`mvnw`、统一返回、分页对象、全局异常、角色/状态枚举、Session 工具、登录拦截器、CORS 配置、健康检查接口和临时认证接口。当前可在无数据库模式下启动并供前端联调登录与健康检查。
 
 ---
 
@@ -26,14 +26,14 @@
 
 ### 阶段一：公共基础
 
-- [ ] 初始化 Spring Boot 工程。
-- [ ] 配置 Maven 依赖。
-- [ ] 配置 `application.yml`。
-- [ ] 创建 `Result`、`PageResult`、`PageQuery`。
-- [ ] 创建 `BusinessException` 和全局异常处理。
-- [ ] 创建角色、状态、风险等级等枚举。
-- [ ] 创建密码工具、Session 工具、时间工具。
-- [ ] 创建登录拦截器和 CORS 配置。
+- [x] 初始化 Spring Boot 工程。
+- [x] 配置 Maven 依赖。
+- [x] 配置 `application.yml`。
+- [x] 创建 `Result`、`PageResult`、`PageQuery`。
+- [x] 创建 `BusinessException` 和全局异常处理。
+- [x] 创建角色、状态、风险等级等枚举。
+- [x] 创建密码工具、Session 工具、时间工具。
+- [x] 创建登录拦截器和 CORS 配置。
 
 ### 阶段二：数据库
 
@@ -47,9 +47,9 @@
 
 ### 阶段三：认证与用户
 
-- [ ] 登录接口。
-- [ ] 退出接口。
-- [ ] 当前用户接口。
+- [x] 登录接口。
+- [x] 退出接口。
+- [x] 当前用户接口。
 - [ ] 用户分页、新增、修改、启用、禁用、重置密码。
 - [ ] 工作人员分页、新增、修改、选项接口。
 - [ ] 学生档案查询与维护。
@@ -145,6 +145,40 @@
 ---
 
 ## 后续更新规则
+
+## 2026-06-06 后端最小骨架
+
+### 完成内容
+- 初始化 Spring Boot 工程并加入 `mvnw`。
+- 配置 `pom.xml`，接入 Spring Web、Validation、MyBatis、MySQL 驱动。
+- 创建 `PsychologicalApplication` 与 `application.yml`。
+- 创建 `Result`、`PageResult`、`PageQuery`、`BusinessException`、`GlobalExceptionHandler`。
+- 创建角色与核心状态枚举。
+- 创建 `PasswordUtils`、`SessionUtils`、`LoginInterceptor`、`WebMvcConfig`。
+- 创建 `/api/health`、`POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/auth/current`。
+- 内置五类临时账号供前端联调。
+
+### 影响文件
+- `pom.xml`
+- `src/main/java/com/tyut/psychological/**`
+- `src/main/resources/application.yml`
+
+### 接口变化
+- 新增健康检查和临时认证相关接口。
+
+### 数据库变化
+- 当前阶段未接入真实 MySQL，先排除 `DataSourceAutoConfiguration`，后续接数据库时恢复。
+
+### 验证方式
+- `./mvnw test`
+- `./mvnw package -DskipTests`
+- `java -jar target/psychological-counseling-backend-0.0.1-SNAPSHOT.jar`
+- `curl http://127.0.0.1:8080/api/health`
+- `curl POST /api/auth/login`
+
+### 遗留问题
+- 目前认证使用内存临时账号，尚未接真实数据库和用户表。
+- 业务模块、SQL 脚本和 Mapper 仍待继续实现。
 
 每完成一个模块，应追加记录：
 
