@@ -20,6 +20,106 @@
 
 后端仓库已完成最小可启动骨架初始化，包含 Spring Boot、`mvnw`、统一返回、分页对象、全局异常、角色/状态枚举、Session 工具、登录拦截器、CORS 配置、健康检查接口和临时认证接口。当前可在无数据库模式下启动并供前端联调登录与健康检查。
 
+## 2026-06-07 阶段四：后端基础信息接口
+
+### 完成内容
+
+- 接入 MySQL 数据库，移除 `DataSourceAutoConfiguration` 排除。
+- 创建 21 张核心数据库表（`init_schema.sql`）。
+- 创建初始数据脚本（`init_data.sql`），包含五类角色、五个演示账号、学生档案、工作人员档案、时间段、咨询室、问题类型和系统配置。
+- 更新 `application.yml` 数据库连接配置（密码 123456）。
+- 创建实体类：`SysUser`、`SysRole`、`SysUserRole`、`StaffProfile`、`CounselingRoom`、`TimeSlot`。
+- 创建 Mapper 接口和 MyBatis XML：`UserMapper`、`StaffProfileMapper`、`CounselingRoomMapper`、`TimeSlotMapper`。
+- 创建 DTO：`UserQuery`、`UserSaveRequest`、`StaffQuery`、`StaffSaveRequest`、`RoomSaveRequest`、`TimeSlotSaveRequest`。
+- 创建 VO：`UserVO`、`StaffVO`、`RoomVO`、`TimeSlotVO`、`OptionVO`。
+- 实现用户管理接口：分页查询 `GET /api/admin/users`、新增 `POST /api/admin/users`、修改 `PUT /api/admin/users/{id}`、启用 `POST /api/admin/users/{id}/enable`、禁用 `POST /api/admin/users/{id}/disable`、重置密码 `POST /api/admin/users/{id}/reset-password`。
+- 实现工作人员管理接口：分页查询 `GET /api/admin/staff`、新增 `POST /api/admin/staff`、修改 `PUT /api/admin/staff/{id}`、选项 `GET /api/admin/staff/options`。
+- 实现咨询室管理接口：分页查询 `GET /api/admin/rooms`、新增 `POST /api/admin/rooms`、修改 `PUT /api/admin/rooms/{id}`、选项 `GET /api/admin/rooms/options`。
+- 实现时间段管理接口：分页查询 `GET /api/admin/time-slots`、新增 `POST /api/admin/time-slots`、修改 `PUT /api/admin/time-slots/{id}`、选项 `GET /api/admin/time-slots/options`。
+- 修改 `AuthService` 接入数据库认证（替代内存临时账号）。
+- 修改 `PsychologicalApplication` 添加 `@MapperScan` 并移除数据源排除。
+- 添加 `PageQuery.getOffset()` 方法支持 MyBatis 分页偏移量。
+
+### 影响文件
+
+- `pom.xml`（无变更，已有 MyBatis 和 MySQL 依赖）
+- `src/main/resources/application.yml`（添加 datasource 配置）
+- `src/main/java/com/tyut/psychological/PsychologicalApplication.java`（移除排除，加 MapperScan）
+- `src/main/java/com/tyut/psychological/common/api/PageQuery.java`（添加 getOffset）
+- `src/main/java/com/tyut/psychological/common/vo/OptionVO.java`（新增）
+- `src/main/java/com/tyut/psychological/user/entity/SysUser.java`（新增）
+- `src/main/java/com/tyut/psychological/user/entity/SysRole.java`（新增）
+- `src/main/java/com/tyut/psychological/user/entity/SysUserRole.java`（新增）
+- `src/main/java/com/tyut/psychological/user/dto/UserQuery.java`（新增）
+- `src/main/java/com/tyut/psychological/user/dto/UserSaveRequest.java`（新增）
+- `src/main/java/com/tyut/psychological/user/vo/UserVO.java`（新增）
+- `src/main/java/com/tyut/psychological/user/mapper/UserMapper.java`（新增）
+- `src/main/java/com/tyut/psychological/user/service/UserService.java`（新增）
+- `src/main/java/com/tyut/psychological/user/controller/UserController.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/entity/StaffProfile.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/dto/StaffQuery.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/dto/StaffSaveRequest.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/vo/StaffVO.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/mapper/StaffProfileMapper.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/service/StaffProfileService.java`（新增）
+- `src/main/java/com/tyut/psychological/profile/controller/StaffController.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/entity/CounselingRoom.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/entity/TimeSlot.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/dto/RoomSaveRequest.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/dto/TimeSlotSaveRequest.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/vo/RoomVO.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/vo/TimeSlotVO.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/mapper/CounselingRoomMapper.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/mapper/TimeSlotMapper.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/service/RoomService.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/service/TimeSlotService.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/controller/RoomController.java`（新增）
+- `src/main/java/com/tyut/psychological/schedule/controller/TimeSlotController.java`（新增）
+- `src/main/java/com/tyut/psychological/auth/service/AuthService.java`（改为数据库认证）
+- `src/main/resources/mapper/user/UserMapper.xml`（新增）
+- `src/main/resources/mapper/profile/StaffProfileMapper.xml`（新增）
+- `src/main/resources/mapper/schedule/CounselingRoomMapper.xml`（新增）
+- `src/main/resources/mapper/schedule/TimeSlotMapper.xml`（新增）
+- `sql/init_schema.sql`（新增，21 张表建表脚本）
+- `sql/init_data.sql`（新增，初始数据）
+
+### 接口变化
+
+- 新增 `GET /api/admin/users` 用户分页
+- 新增 `POST /api/admin/users` 新增用户
+- 新增 `PUT /api/admin/users/{id}` 修改用户
+- 新增 `POST /api/admin/users/{id}/enable` 启用用户
+- 新增 `POST /api/admin/users/{id}/disable` 禁用用户
+- 新增 `POST /api/admin/users/{id}/reset-password` 重置密码
+- 新增 `GET /api/admin/staff` 工作人员分页
+- 新增 `POST /api/admin/staff` 新增工作人员
+- 新增 `PUT /api/admin/staff/{id}` 修改工作人员
+- 新增 `GET /api/admin/staff/options` 工作人员选项
+- 新增 `GET /api/admin/rooms` 咨询室分页
+- 新增 `POST /api/admin/rooms` 新增咨询室
+- 新增 `PUT /api/admin/rooms/{id}` 修改咨询室
+- 新增 `GET /api/admin/rooms/options` 咨询室选项
+- 新增 `GET /api/admin/time-slots` 时间段分页
+- 新增 `POST /api/admin/time-slots` 新增时间段
+- 新增 `PUT /api/admin/time-slots/{id}` 修改时间段
+- 新增 `GET /api/admin/time-slots/options` 时间段选项
+
+### 数据库变化
+
+- 创建数据库 `psychological_counseling`。
+- 创建 21 张核心表。
+- 初始数据：5 个角色、5 个用户、1 个学生档案、4 个工作人员档案、6 个时间段、3 个咨询室、8 个问题类型、5 个系统配置。
+
+### 验证方式
+
+- `./mvnw compile`
+- `./mvnw package -DskipTests`
+- 启动应用后测试接口（见测试文件）
+
+### 遗留问题
+
+- 初始数据使用英文姓名（因编码问题执行 clean SQL），中文版保留在 `init_data.sql` 中供后续重新执行。
+
 ---
 
 ## 待开发任务总览

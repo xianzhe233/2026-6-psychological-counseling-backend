@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.schedule.mapper.CounselingRoomMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.schedule.entity.CounselingRoom">
+        SELECT * FROM counseling_room WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO counseling_room (room_name, location, capacity, status, remark, create_time)
+        VALUES (#{roomName}, #{location}, #{capacity}, #{status}, #{remark}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE counseling_room
+        <set>
+            <if test="roomName != null">room_name = #{roomName},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="capacity != null">capacity = #{capacity},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageRooms" resultType="com.tyut.psychological.schedule.vo.RoomVO">
+        SELECT id, room_name, location, capacity, status, remark
+        FROM counseling_room
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (room_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR location LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="countRooms" resultType="long">
+        SELECT COUNT(*) FROM counseling_room
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (room_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR location LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <select id="selectOptions" resultType="com.tyut.psychological.common.vo.OptionVO">
+        SELECT room_name AS label, id AS value FROM counseling_room WHERE status = 1 ORDER BY room_name
+    </select>
+</mapper>

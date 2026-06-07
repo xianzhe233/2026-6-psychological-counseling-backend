@@ -19,4 +19,8 @@ public class PageQuery {
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
+
+    public int getOffset() {
+        return (pageNum - 1) * pageSize;
+    }
 }
