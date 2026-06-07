@@ -60,7 +60,7 @@
             AND ds.duty_date >= #{startDate}
         </if>
         <if test="endDate != null">
-            AND ds.duty_date <= #{endDate}
+            AND ds.duty_date &lt;= #{endDate}
         </if>
         <if test="status != null">
             AND ds.status = #{status}
@@ -81,7 +81,7 @@
             AND ds.duty_date >= #{startDate}
         </if>
         <if test="endDate != null">
-            AND ds.duty_date <= #{endDate}
+            AND ds.duty_date &lt;= #{endDate}
         </if>
         <if test="status != null">
             AND ds.status = #{status}
@@ -109,7 +109,7 @@
         SET reserved_count = reserved_count + #{count},
             update_time = NOW()
         WHERE id = #{id}
-          AND reserved_count + #{count} <= capacity
+          AND reserved_count + #{count} &lt;= capacity
     </update>
 
     <update id="decrementReservedCount">
