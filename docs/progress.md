@@ -1,6 +1,6 @@
 # 后端进度记录
 
-> 本文件记录后端开发进度。当前阶段为详细设计阶段，尚未写入实际后端代码。
+> 本文件记录后端开发进度。当前仓库已进入基础功能落地与联调修复阶段。
 
 ---
 
@@ -18,7 +18,13 @@
 
 ### 当前状态
 
-后端仓库已完成最小可启动骨架初始化，包含 Spring Boot、`mvnw`、统一返回、分页对象、全局异常、角色/状态枚举、Session 工具、登录拦截器、CORS 配置、健康检查接口和临时认证接口。当前可在无数据库模式下启动并供前端联调登录与健康检查。
+后端仓库当前 `dev` 基线已完成：
+- 最小可启动骨架；
+- ltb 阶段4基础信息接口；
+- qxz 对阶段4的 review 修复；
+- 支撑 lcw 学生端阶段2/3所需的最小学生接口（首访登记表 / 知情同意书）。
+
+当前已可基于 MySQL 初始化项目数据库，完成数据库认证，并支撑管理员基础管理页面与学生“首访登记表 → 知情同意书”最小链路联调。
 
 ## 2026-06-07 阶段四：后端基础信息接口
 
@@ -27,7 +33,7 @@
 - 接入 MySQL 数据库，移除 `DataSourceAutoConfiguration` 排除。
 - 创建 21 张核心数据库表（`init_schema.sql`）。
 - 创建初始数据脚本（`init_data.sql`），包含五类角色、五个演示账号、学生档案、工作人员档案、时间段、咨询室、问题类型和系统配置。
-- 更新 `application.yml` 数据库连接配置（密码 123456）。
+- 更新 `application.yml` 数据库连接配置，支持通过环境变量覆盖数据库连接信息。
 - 创建实体类：`SysUser`、`SysRole`、`SysUserRole`、`StaffProfile`、`CounselingRoom`、`TimeSlot`。
 - 创建 Mapper 接口和 MyBatis XML：`UserMapper`、`StaffProfileMapper`、`CounselingRoomMapper`、`TimeSlotMapper`。
 - 创建 DTO：`UserQuery`、`UserSaveRequest`、`StaffQuery`、`StaffSaveRequest`、`RoomSaveRequest`、`TimeSlotSaveRequest`。
@@ -112,13 +118,15 @@
 
 ### 验证方式
 
-- `./mvnw compile`
-- `./mvnw package -DskipTests`
-- 启动应用后测试接口（见测试文件）
+- `./mvnw test`
+- 启动应用后测试：`/api/auth/login`、`/api/auth/current`
+- 启动应用后测试：`/api/admin/users`、`/api/admin/staff`、`/api/admin/rooms`、`/api/admin/time-slots`
+- 使用学生账号测试：`/api/student/first-visit/forms/latest`、`/api/student/first-visit/forms`、`/api/student/consents/status`、`/api/student/consents/sign`
 
 ### 遗留问题
 
-- 初始数据使用英文姓名（因编码问题执行 clean SQL），中文版保留在 `init_data.sql` 中供后续重新执行。
+- 学生端预约提交、我的预约、我的通知等接口仍未完成。
+- 值班、审核、初访结果、咨询队列等后续业务接口仍待继续实现。
 
 ---
 
@@ -137,27 +145,27 @@
 
 ### 阶段二：数据库
 
-- [ ] 编写 `sql/init_schema.sql`。
-- [ ] 编写 `sql/init_data.sql`。
+- [x] 编写 `sql/init_schema.sql`。
+- [x] 编写 `sql/init_data.sql`。
 - [ ] 编写 `sql/demo_data.sql`。
-- [ ] 创建 21 张核心表。
-- [ ] 初始化五类角色和演示账号。
-- [ ] 初始化时间段、咨询室、问题类型。
-- [ ] 创建实体类和基础 Mapper。
+- [x] 创建 21 张核心表。
+- [x] 初始化五类角色和演示账号。
+- [x] 初始化时间段、咨询室、问题类型。
+- [x] 创建实体类和基础 Mapper。
 
 ### 阶段三：认证与用户
 
 - [x] 登录接口。
 - [x] 退出接口。
 - [x] 当前用户接口。
-- [ ] 用户分页、新增、修改、启用、禁用、重置密码。
-- [ ] 工作人员分页、新增、修改、选项接口。
+- [x] 用户分页、新增、修改、启用、禁用、重置密码。
+- [x] 工作人员分页、新增、修改、选项接口。
 - [ ] 学生档案查询与维护。
 
 ### 阶段四：时间配置和值班
 
-- [ ] 咨询室管理接口。
-- [ ] 时间段管理接口。
+- [x] 咨询室管理接口。
+- [x] 时间段管理接口。
 - [ ] 值班分页接口。
 - [ ] 值班新增/编辑接口。
 - [ ] 值班冲突检测。
@@ -166,14 +174,14 @@
 
 ### 阶段五：学生首访预约
 
-- [ ] 首访登记表提交接口。
-- [ ] 风险评分服务。
-- [ ] 知情同意状态查询。
-- [ ] 知情同意签署。
+- [x] 首访登记表提交接口。
+- [x] 风险评分服务。
+- [x] 知情同意状态查询。
+- [x] 知情同意签署。
 - [ ] 初访预约提交。
 - [ ] 我的预约分页。
 - [ ] 学生撤销预约。
-- [ ] 学生通知查询。
+- [ ] 学生通知查询.
 
 ### 阶段六：管理员审核
 
@@ -235,12 +243,51 @@
 
 ## 当前风险
 
-1. 多角色权限和数据归属校验较多，需在 Service 层严格控制。
-2. 预约容量和时间冲突需要事务保证，不能只做前端校验。
+1. 预约容量和时间冲突需要事务保证，不能只做前端校验。
+2. 值班、审核、初访结果、咨询队列等主流程接口尚未补齐，后续联调仍有工作量。
 3. 咨询安排涉及咨询师、学生和咨询室冲突，必须由后端统一校验。
 4. 结案报告 Word 导出格式可能需要较多调试时间。
 5. 统计接口依赖演示数据，需提前准备 `demo_data.sql`。
-6. 若使用 Spring Boot 3，则团队环境需统一 JDK 17。
+6. 当前环境已统一使用 JDK 21；如组员本地环境不一致需再次核对。
+
+---
+
+## 2026-06-07 收尾 review、修复并合入 `dev`
+
+### 完成内容
+- 将 qxz 对 ltb 阶段4后端的 review 修复通过 PR #8 合入 `dev`。
+- 创建并初始化本地项目数据库，验证数据库认证与管理员基础管理接口可用。
+- 为支撑 lcw 已合入前端阶段2/3页面，补齐学生端最小接口：首访登记表 latest/save、知情同意状态查询/签署。
+- 浏览器与接口双重验证管理员基础管理接口、学生首访登记与知情同意链路，确认当前 `dev` 基线满足已合 PR 宣称进度。
+
+### 影响文件
+- `src/main/java/com/tyut/psychological/student/**`
+- `src/main/resources/mapper/student/StudentFormMapper.xml`
+- `src/main/resources/application.yml`
+- `sql/init_schema.sql`
+- `sql/init_data.sql`
+- `docs/progress.md`
+
+### 接口变化
+- 新增 `GET /api/student/first-visit/forms/latest`
+- 新增 `POST /api/student/first-visit/forms`
+- 新增 `GET /api/student/consents/status`
+- 新增 `POST /api/student/consents/sign`
+
+### 数据库变化
+- 本地创建项目库 `psychological_counseling` 并导入初始化脚本。
+- 新增本地专用数据库账号 `project_psy` 用于联调测试。
+
+### 验证方式
+- `./mvnw test`
+- 启动应用后测试：`/api/auth/login`、`/api/auth/current`
+- 启动应用后测试：`/api/admin/users`、`/api/admin/staff`、`/api/admin/rooms`、`/api/admin/time-slots`
+- 启动应用后测试：`/api/student/first-visit/forms/latest`、`/api/student/first-visit/forms`、`/api/student/consents/status`、`/api/student/consents/sign`
+- 浏览器实测：学生首访登记表提交、知情同意签署、跳转预约骨架页
+
+### 遗留问题
+- 学生端预约提交、我的预约、我的通知等接口仍未完成。
+- 值班、审核、初访结果、咨询队列等后续业务接口仍待继续实现。
 
 ---
 
