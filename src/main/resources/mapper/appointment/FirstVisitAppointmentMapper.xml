@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.appointment.mapper.FirstVisitAppointmentMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.appointment.entity.FirstVisitAppointment">
+        SELECT * FROM first_visit_appointment WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO first_visit_appointment (
+            appointment_no, student_id, form_id, interviewer_id, duty_schedule_id,
+            appointment_date, slot_id, room_id, appointment_status, priority_flag,
+            audit_admin_id, audit_time, audit_remark, cancel_reason, create_time
+        ) VALUES (
+            #{appointmentNo}, #{studentId}, #{formId}, #{interviewerId}, #{dutyScheduleId},
+            #{appointmentDate}, #{slotId}, #{roomId}, #{appointmentStatus}, #{priorityFlag},
+            #{auditAdminId}, #{auditTime}, #{auditRemark}, #{cancelReason}, NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE first_visit_appointment
+        <set>
+            <if test="appointmentNo != null">appointment_no = #{appointmentNo},</if>
+            <if test="studentId != null">student_id = #{studentId},</if>
+            <if test="formId != null">form_id = #{formId},</if>
+            <if test="interviewerId != null">interviewer_id = #{interviewerId},</if>
+            <if test="dutyScheduleId != null">duty_schedule_id = #{dutyScheduleId},</if>
+            <if test="appointmentDate != null">appointment_date = #{appointmentDate},</if>
+            <if test="slotId != null">slot_id = #{slotId},</if>
+            <if test="roomId != null">room_id = #{roomId},</if>
+            <if test="appointmentStatus != null">appointment_status = #{appointmentStatus},</if>
+            <if test="priorityFlag != null">priority_flag = #{priorityFlag},</if>
+            <if test="auditAdminId != null">audit_admin_id = #{auditAdminId},</if>
+            <if test="auditTime != null">audit_time = #{auditTime},</if>
+            <if test="auditRemark != null">audit_remark = #{auditRemark},</if>
+            <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageAuditList" resultType="com.tyut.psychological.appointment.vo.AppointmentAuditVO">
+        SELECT 
+            fva.id,
+            fva.appointment_no,
+            fva.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            sp.college,
+            fva.form_id,
+            fvf.main_problem,
+            fvf.problem_description,
+            fvf.risk_score,
+            fvf.risk_level,
+            fva.appointment_date,
+            fva.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            fva.room_id,
+            cr.room_name,
+            fva.interviewer_id,
+            interviewer_su.real_name AS interviewer_name,
+            fva.duty_schedule_id,
+            fva.appointment_status,
+            fva.priority_flag,
+            fva.audit_admin_id,
+            admin_su.real_name AS audit_admin_name,
+            fva.audit_time,
+            fva.audit_remark,
+            fva.cancel_reason,
+            fva.create_time,
+            fva.update_time
+        FROM first_visit_appointment fva
+        LEFT JOIN sys_user su ON fva.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN first_visit_form fvf ON fva.form_id = fvf.id
+        LEFT JOIN time_slot ts ON fva.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        LEFT JOIN staff_profile isp ON fva.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
+        LEFT JOIN sys_user admin_su ON fva.audit_admin_id = admin_su.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR fva.appointment_no LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null and status != ''">
+            AND fva.appointment_status = #{status}
+        </if>
+        <if test="riskLevel != null and riskLevel != ''">
+            AND fvf.risk_level = #{riskLevel}
+        </if>
+        <if test="startDate != null">
+            AND fva.appointment_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND fva.appointment_date <= #{endDate}
+        </if>
+        <if test="priorityFlag != null">
+            AND fva.priority_flag = #{priorityFlag}
+        </if>
+        ORDER BY 
+            CASE fvf.risk_level 
+                WHEN 'URGENT' THEN 1 
+                WHEN 'HIGH' THEN 2 
+                WHEN 'MEDIUM' THEN 3 
+                WHEN 'LOW' THEN 4 
+            END,
+            fva.priority_flag DESC,
+            fva.create_time DESC
+    </select>
+
+    <select id="countAuditList" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment fva
+        LEFT JOIN sys_user su ON fva.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN first_visit_form fvf ON fva.form_id = fvf.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{keyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR fva.appointment_no LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="status != null and status != ''">
+            AND fva.appointment_status = #{status}
+        </if>
+        <if test="riskLevel != null and riskLevel != ''">
+            AND fvf.risk_level = #{riskLevel}
+        </if>
+        <if test="startDate != null">
+            AND fva.appointment_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND fva.appointment_date <= #{endDate}
+        </if>
+        <if test="priorityFlag != null">
+            AND fva.priority_flag = #{priorityFlag}
+        </if>
+    </select>
+
+    <select id="selectDetailById" resultType="com.tyut.psychological.appointment.vo.AppointmentAuditVO">
+        SELECT 
+            fva.id,
+            fva.appointment_no,
+            fva.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            sp.college,
+            fva.form_id,
+            fvf.main_problem,
+            fvf.problem_description,
+            fvf.risk_score,
+            fvf.risk_level,
+            fva.appointment_date,
+            fva.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            fva.room_id,
+            cr.room_name,
+            fva.interviewer_id,
+            interviewer_su.real_name AS interviewer_name,
+            fva.duty_schedule_id,
+            fva.appointment_status,
+            fva.priority_flag,
+            fva.audit_admin_id,
+            admin_su.real_name AS audit_admin_name,
+            fva.audit_time,
+            fva.audit_remark,
+            fva.cancel_reason,
+            fva.create_time,
+            fva.update_time
+        FROM first_visit_appointment fva
+        LEFT JOIN sys_user su ON fva.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN first_visit_form fvf ON fva.form_id = fvf.id
+        LEFT JOIN time_slot ts ON fva.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        LEFT JOIN staff_profile isp ON fva.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
+        LEFT JOIN sys_user admin_su ON fva.audit_admin_id = admin_su.id
+        WHERE fva.id = #{id}
+    </select>
+
+    <select id="checkStudentUnfinishedAppointment" resultType="long">
+        SELECT COUNT(*) FROM first_visit_appointment
+        WHERE student_id = #{studentId}
+          AND appointment_status IN ('PENDING', 'APPROVED')
+          <if test="excludeId != null">
+              AND id != #{excludeId}
+          </if>
+    </select>
+
+</mapper>
