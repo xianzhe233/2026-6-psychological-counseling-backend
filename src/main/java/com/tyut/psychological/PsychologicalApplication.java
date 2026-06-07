@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.tyut.psychological.*.mapper")
+@MapperScan("com.tyut.psychological.**.mapper")
 public class PsychologicalApplication {
 
     public static void main(String[] args) {
