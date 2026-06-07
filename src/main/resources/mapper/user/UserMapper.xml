@@ -18,6 +18,7 @@
     <update id="update">
         UPDATE sys_user
         <set>
+            <if test="username != null">username = #{username},</if>
             <if test="realName != null">real_name = #{realName},</if>
             <if test="phone != null">phone = #{phone},</if>
             <if test="email != null">email = #{email},</if>
@@ -35,7 +36,8 @@
         <if test="query.keyword != null and query.keyword != ''">
             AND (username LIKE CONCAT('%', #{query.keyword}, '%')
                  OR real_name LIKE CONCAT('%', #{query.keyword}, '%')
-                 OR phone LIKE CONCAT('%', #{query.keyword}, '%'))
+                 OR phone LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR email LIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <if test="query.status != null">
             AND status = #{query.status}
@@ -52,7 +54,8 @@
         <if test="query.keyword != null and query.keyword != ''">
             AND (username LIKE CONCAT('%', #{query.keyword}, '%')
                  OR real_name LIKE CONCAT('%', #{query.keyword}, '%')
-                 OR phone LIKE CONCAT('%', #{query.keyword}, '%'))
+                 OR phone LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR email LIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <if test="query.status != null">
             AND status = #{query.status}
@@ -75,6 +78,14 @@
 
     <delete id="deleteUserRoles">
         DELETE FROM sys_user_role WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteUserRoleByRoleCode">
+        DELETE ur
+        FROM sys_user_role ur
+        INNER JOIN sys_role r ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+          AND r.role_code = #{roleCode}
     </delete>
 
     <select id="selectRoleIdByCode" resultType="long">

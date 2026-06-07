@@ -3,6 +3,7 @@ package com.tyut.psychological.profile.vo;
 public class StaffVO {
     private Long id;
     private Long userId;
+    private String username;
     private String staffNo;
     private String realName;
     private String phone;
@@ -17,6 +18,8 @@ public class StaffVO {
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
     public String getStaffNo() { return staffNo; }
     public void setStaffNo(String staffNo) { this.staffNo = staffNo; }
     public String getRealName() { return realName; }

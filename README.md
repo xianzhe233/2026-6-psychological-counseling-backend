@@ -2,4 +2,8 @@
 
 后端服务工程目录。
 
-This is a test
+## 初始化
+
+- 先执行 `sql/init_schema.sql`
+- 再执行 `sql/init_data.sql`
+- 默认管理员账号：`admin / 123456`
