@@ -29,6 +29,8 @@ public interface UserMapper {
 
     int deleteUserRoles(@Param("userId") Long userId);
 
+    int deleteUserRoleByRoleCode(@Param("userId") Long userId, @Param("roleCode") String roleCode);
+
     Long selectRoleIdByCode(@Param("roleCode") String roleCode);
 
     int updateLastLoginTime(@Param("id") Long id);

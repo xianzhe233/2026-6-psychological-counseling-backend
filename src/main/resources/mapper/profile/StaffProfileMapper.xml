@@ -31,7 +31,7 @@
     </update>
 
     <select id="pageStaff" resultType="com.tyut.psychological.profile.vo.StaffVO">
-        SELECT sp.id, sp.user_id, sp.staff_no, su.real_name, su.phone, sp.staff_type,
+        SELECT sp.id, sp.user_id, su.username, sp.staff_no, su.real_name, su.phone, sp.staff_type,
                sp.title, sp.specialty, sp.introduction, sp.max_daily_appointments, sp.status
         FROM staff_profile sp
         LEFT JOIN sys_user su ON sp.user_id = su.id

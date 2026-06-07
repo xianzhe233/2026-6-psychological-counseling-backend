@@ -41,41 +41,49 @@ public class StaffProfileService {
     // 新增工作人员，自动创建关联用户
     @Transactional
     public Long createStaff(StaffSaveRequest request) {
-        if (request.getRealName() == null || request.getRealName().isEmpty()) {
+        String realName = trimToNull(request.getRealName());
+        if (realName == null) {
             throw new BusinessException(400, "姓名不能为空");
         }
+
+        String username = trimToNull(request.getUsername());
+        String phone = trimToNull(request.getPhone());
+        String staffType = trimToNull(request.getStaffType());
         Long userId = request.getUserId();
-        // 如果没有关联用户，自动创建
+
         if (userId == null) {
-            if (request.getUsername() == null || request.getUsername().isEmpty()) {
+            if (username == null) {
                 throw new BusinessException(400, "用户名不能为空");
             }
-            SysUser existing = userMapper.selectByUsername(request.getUsername());
+            SysUser existing = userMapper.selectByUsername(username);
             if (existing != null) {
                 throw new BusinessException(400, "用户名已存在");
             }
             SysUser user = new SysUser();
-            user.setUsername(request.getUsername());
-            user.setRealName(request.getRealName());
-            user.setPhone(request.getPhone());
+            user.setUsername(username);
+            user.setRealName(realName);
+            user.setPhone(phone);
             user.setPasswordHash(PasswordUtils.hash(defaultPassword));
-            user.setStatus(1);
+            user.setStatus(request.getStatus() != null ? request.getStatus() : 1);
             userMapper.insert(user);
             userId = user.getId();
-            // 分配对应角色
-            Long roleId = userMapper.selectRoleIdByCode(request.getStaffType());
-            if (roleId != null) {
-                userMapper.insertUserRole(userId, roleId);
+        } else {
+            SysUser linkedUser = userMapper.selectById(userId);
+            if (linkedUser == null) {
+                throw new BusinessException(404, "关联用户不存在");
             }
+            syncLinkedUser(userId, realName, phone, request.getStatus());
         }
-        // 创建工作人员档案
+
+        syncStaffUserRole(userId, null, staffType);
+
         StaffProfile profile = new StaffProfile();
         profile.setUserId(userId);
-        profile.setStaffNo(request.getStaffNo());
-        profile.setStaffType(request.getStaffType());
-        profile.setTitle(request.getTitle());
-        profile.setSpecialty(request.getSpecialty());
-        profile.setIntroduction(request.getIntroduction());
+        profile.setStaffNo(trimToNull(request.getStaffNo()));
+        profile.setStaffType(staffType);
+        profile.setTitle(trimToNull(request.getTitle()));
+        profile.setSpecialty(trimToNull(request.getSpecialty()));
+        profile.setIntroduction(trimToNull(request.getIntroduction()));
         profile.setMaxDailyAppointments(request.getMaxDailyAppointments() != null ? request.getMaxDailyAppointments() : 6);
         profile.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         staffProfileMapper.insert(profile);
@@ -83,28 +91,34 @@ public class StaffProfileService {
     }
 
     // 修改工作人员档案
+    @Transactional
     public void updateStaff(Long id, StaffSaveRequest request) {
         StaffProfile existing = staffProfileMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "工作人员不存在");
         }
+
+        String realName = trimToNull(request.getRealName());
+        if (realName == null) {
+            throw new BusinessException(400, "姓名不能为空");
+        }
+        String phone = trimToNull(request.getPhone());
+        String staffType = trimToNull(request.getStaffType());
+
         StaffProfile profile = new StaffProfile();
         profile.setId(id);
-        profile.setStaffNo(request.getStaffNo());
-        profile.setStaffType(request.getStaffType());
-        profile.setTitle(request.getTitle());
-        profile.setSpecialty(request.getSpecialty());
-        profile.setIntroduction(request.getIntroduction());
+        profile.setStaffNo(trimToNull(request.getStaffNo()));
+        profile.setStaffType(staffType);
+        profile.setTitle(trimToNull(request.getTitle()));
+        profile.setSpecialty(trimToNull(request.getSpecialty()));
+        profile.setIntroduction(trimToNull(request.getIntroduction()));
         profile.setMaxDailyAppointments(request.getMaxDailyAppointments());
         profile.setStatus(request.getStatus());
         staffProfileMapper.update(profile);
-        // 同步更新用户姓名和手机号
+
         if (existing.getUserId() != null) {
-            SysUser user = new SysUser();
-            user.setId(existing.getUserId());
-            user.setRealName(request.getRealName());
-            user.setPhone(request.getPhone());
-            userMapper.update(user);
+            syncLinkedUser(existing.getUserId(), realName, phone, request.getStatus());
+            syncStaffUserRole(existing.getUserId(), existing.getStaffType(), staffType);
         }
     }
 
@@ -120,5 +134,43 @@ public class StaffProfileService {
             throw new BusinessException(404, "工作人员不存在");
         }
         return profile;
+    }
+
+    private void syncLinkedUser(Long userId, String realName, String phone, Integer status) {
+        SysUser user = new SysUser();
+        user.setId(userId);
+        user.setRealName(realName);
+        user.setPhone(phone);
+        if (status != null) {
+            user.setStatus(status);
+        }
+        userMapper.update(user);
+    }
+
+    private void syncStaffUserRole(Long userId, String oldStaffType, String newStaffType) {
+        if (userId == null) {
+            return;
+        }
+        if (oldStaffType != null && !oldStaffType.equals(newStaffType)) {
+            userMapper.deleteUserRoleByRoleCode(userId, oldStaffType);
+        }
+        if (newStaffType == null) {
+            return;
+        }
+        List<String> roleCodes = userMapper.selectRoleCodesByUserId(userId);
+        if (!roleCodes.contains(newStaffType)) {
+            Long roleId = userMapper.selectRoleIdByCode(newStaffType);
+            if (roleId != null) {
+                userMapper.insertUserRole(userId, roleId);
+            }
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
