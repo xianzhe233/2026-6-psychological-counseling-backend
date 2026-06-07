@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.schedule.mapper.DutyScheduleMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.schedule.entity.DutySchedule">
+        SELECT * FROM duty_schedule WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO duty_schedule (staff_id, staff_type, duty_date, slot_id, room_id, capacity, reserved_count, status, create_time)
+        VALUES (#{staffId}, #{staffType}, #{dutyDate}, #{slotId}, #{roomId}, #{capacity}, #{reservedCount}, #{status}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE duty_schedule
+        <set>
+            <if test="staffId != null">staff_id = #{staffId},</if>
+            <if test="staffType != null">staff_type = #{staffType},</if>
+            <if test="dutyDate != null">duty_date = #{dutyDate},</if>
+            <if test="slotId != null">slot_id = #{slotId},</if>
+            <if test="roomId != null">room_id = #{roomId},</if>
+            <if test="capacity != null">capacity = #{capacity},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageDutySchedules" resultType="com.tyut.psychological.schedule.vo.DutyScheduleVO">
+        SELECT 
+            ds.id,
+            ds.staff_id,
+            sp.user_id,
+            su.real_name AS staff_name,
+            ds.staff_type,
+            ds.duty_date,
+            ds.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            ds.room_id,
+            cr.room_name,
+            ds.capacity,
+            ds.reserved_count,
+            (ds.capacity - ds.reserved_count) AS remaining,
+            ds.status
+        FROM duty_schedule ds
+        LEFT JOIN staff_profile sp ON ds.staff_id = sp.id
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        LEFT JOIN time_slot ts ON ds.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON ds.room_id = cr.id
+        WHERE 1=1
+        <if test="staffType != null and staffType != ''">
+            AND ds.staff_type = #{staffType}
+        </if>
+        <if test="staffId != null">
+            AND ds.staff_id = #{staffId}
+        </if>
+        <if test="startDate != null">
+            AND ds.duty_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND ds.duty_date &lt;= #{endDate}
+        </if>
+        <if test="status != null">
+            AND ds.status = #{status}
+        </if>
+        ORDER BY ds.duty_date DESC, ts.start_time ASC
+    </select>
+
+    <select id="countDutySchedules" resultType="long">
+        SELECT COUNT(*) FROM duty_schedule ds
+        WHERE 1=1
+        <if test="staffType != null and staffType != ''">
+            AND ds.staff_type = #{staffType}
+        </if>
+        <if test="staffId != null">
+            AND ds.staff_id = #{staffId}
+        </if>
+        <if test="startDate != null">
+            AND ds.duty_date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND ds.duty_date &lt;= #{endDate}
+        </if>
+        <if test="status != null">
+            AND ds.status = #{status}
+        </if>
+    </select>
+
+    <select id="checkConflict" resultType="long">
+        SELECT COUNT(*) FROM duty_schedule
+        WHERE staff_id = #{staffId}
+          AND duty_date = #{dutyDate}
+          AND slot_id = #{slotId}
+          <if test="excludeId != null">
+              AND id != #{excludeId}
+          </if>
+    </select>
+
+    <select id="checkCapacity" resultType="boolean">
+        SELECT CASE WHEN #{newCapacity} >= reserved_count THEN true ELSE false END
+        FROM duty_schedule
+        WHERE id = #{id}
+    </select>
+
+    <update id="incrementReservedCount">
+        UPDATE duty_schedule
+        SET reserved_count = reserved_count + #{count},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND reserved_count + #{count} &lt;= capacity
+    </update>
+
+    <update id="decrementReservedCount">
+        UPDATE duty_schedule
+        SET reserved_count = reserved_count - #{count},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND reserved_count - #{count} >= 0
+    </update>
+
+</mapper>
