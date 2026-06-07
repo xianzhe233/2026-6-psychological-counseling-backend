@@ -6,47 +6,57 @@ import com.tyut.psychological.common.enums.RoleCode;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.util.PasswordUtils;
 import com.tyut.psychological.common.util.SessionUtils;
+import com.tyut.psychological.user.entity.SysUser;
+import com.tyut.psychological.user.mapper.UserMapper;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
-    private static final Map<String, TemporaryUser> TEMP_USERS = Map.of(
-            "admin", new TemporaryUser(1L, "admin", "中心管理员", "13800000000", List.of(RoleCode.ADMIN), RoleCode.ADMIN, PasswordUtils.hash("123456")),
-            "20230001", new TemporaryUser(2L, "20230001", "学生示例", "13800000001", List.of(RoleCode.STUDENT), RoleCode.STUDENT, PasswordUtils.hash("123456")),
-            "interviewer", new TemporaryUser(3L, "interviewer", "初访员示例", "13800000002", List.of(RoleCode.INTERVIEWER), RoleCode.INTERVIEWER, PasswordUtils.hash("123456")),
-            "assistant", new TemporaryUser(4L, "assistant", "心理助理示例", "13800000003", List.of(RoleCode.ASSISTANT), RoleCode.ASSISTANT, PasswordUtils.hash("123456")),
-            "counselor", new TemporaryUser(5L, "counselor", "咨询师示例", "13800000004", List.of(RoleCode.COUNSELOR), RoleCode.COUNSELOR, PasswordUtils.hash("123456"))
-    );
+    private final UserMapper userMapper;
 
+    public AuthService(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+    // 登录：从数据库查询用户，校验密码和状态
     public CurrentUserVO login(LoginRequest request, HttpSession session) {
-        TemporaryUser user = TEMP_USERS.get(request.getUsername());
+        SysUser user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
             throw new BusinessException(400, "用户名或密码错误");
         }
-        if (!PasswordUtils.matches(request.getPassword(), user.passwordHash())) {
+        if (!PasswordUtils.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BusinessException(400, "用户名或密码错误");
         }
+        if (user.getStatus() != null && user.getStatus() == 0) {
+            throw new BusinessException(403, "用户已被禁用");
+        }
+        // 更新最后登录时间
+        userMapper.updateLastLoginTime(user.getId());
+        // 构建当前用户信息
         CurrentUserVO currentUser = buildCurrentUser(user);
         session.setAttribute(SessionUtils.LOGIN_USER, currentUser);
         return currentUser;
     }
 
-    public CurrentUserVO buildCurrentUser(TemporaryUser user) {
+    // 从数据库用户构建 CurrentUserVO
+    public CurrentUserVO buildCurrentUser(SysUser user) {
         CurrentUserVO vo = new CurrentUserVO();
-        vo.setId(user.id());
-        vo.setUsername(user.username());
-        vo.setRealName(user.realName());
-        vo.setPhone(user.phone());
-        vo.setRoles(user.roles());
-        vo.setPrimaryRole(user.primaryRole());
+        vo.setId(user.getId());
+        vo.setUsername(user.getUsername());
+        vo.setRealName(user.getRealName());
+        vo.setPhone(user.getPhone());
+        List<String> roleCodes = userMapper.selectRoleCodesByUserId(user.getId());
+        List<RoleCode> roles = roleCodes.stream()
+                .map(RoleCode::valueOf)
+                .collect(Collectors.toList());
+        vo.setRoles(roles);
+        if (!roles.isEmpty()) {
+            vo.setPrimaryRole(roles.get(0));
+        }
         return vo;
-    }
-
-    private record TemporaryUser(Long id, String username, String realName, String phone,
-                                 List<RoleCode> roles, RoleCode primaryRole, String passwordHash) {
     }
 }
