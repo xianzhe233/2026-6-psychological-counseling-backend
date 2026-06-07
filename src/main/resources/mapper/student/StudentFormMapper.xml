@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.student.mapper.StudentFormMapper">
+
+    <select id="selectLatestByStudentId" resultType="com.tyut.psychological.student.entity.FirstVisitForm">
+        SELECT *
+        FROM first_visit_form
+        WHERE student_id = #{studentId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectById" resultType="com.tyut.psychological.student.entity.FirstVisitForm">
+        SELECT * FROM first_visit_form WHERE id = #{id}
+    </select>
+
+    <insert id="insertFirstVisitForm" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO first_visit_form (
+            student_id, main_problem, problem_description, expected_help,
+            mood_score, sleep_score, stress_score,
+            self_harm_flag, emergency_flag,
+            risk_score, risk_level, form_status, submit_time, create_time, update_time
+        ) VALUES (
+            #{studentId}, #{mainProblem}, #{problemDescription}, #{expectedHelp},
+            #{moodScore}, #{sleepScore}, #{stressScore},
+            #{selfHarmFlag}, #{emergencyFlag},
+            #{riskScore}, #{riskLevel}, #{formStatus}, #{submitTime}, NOW(), NOW()
+        )
+    </insert>
+
+    <select id="selectConsentByFormId" resultType="com.tyut.psychological.student.entity.ConsentRecord">
+        SELECT * FROM consent_record WHERE form_id = #{formId}
+    </select>
+
+    <insert id="insertConsentRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO consent_record (
+            form_id, student_id, consent_version, signed, sign_time, sign_ip, create_time
+        ) VALUES (
+            #{formId}, #{studentId}, #{consentVersion}, #{signed}, #{signTime}, #{signIp}, NOW()
+        )
+    </insert>
+</mapper>
