@@ -3,6 +3,8 @@ package com.tyut.psychological.schedule.service;
 import com.tyut.psychological.common.api.PageResult;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.log.service.OperationLogService;
+import com.tyut.psychological.profile.entity.StaffProfile;
+import com.tyut.psychological.profile.mapper.StaffProfileMapper;
 import com.tyut.psychological.schedule.dto.BatchScheduleRequest;
 import com.tyut.psychological.schedule.dto.BatchScheduleResponse;
 import com.tyut.psychological.schedule.dto.DutyScheduleSaveRequest;
@@ -24,10 +26,14 @@ import java.util.List;
 @Service
 public class DutyScheduleService {
     private final DutyScheduleMapper dutyScheduleMapper;
+    private final StaffProfileMapper staffProfileMapper;
     private final OperationLogService operationLogService;
 
-    public DutyScheduleService(DutyScheduleMapper dutyScheduleMapper, OperationLogService operationLogService) {
+    public DutyScheduleService(DutyScheduleMapper dutyScheduleMapper, 
+                              StaffProfileMapper staffProfileMapper,
+                              OperationLogService operationLogService) {
         this.dutyScheduleMapper = dutyScheduleMapper;
+        this.staffProfileMapper = staffProfileMapper;
         this.operationLogService = operationLogService;
     }
 
@@ -62,6 +68,15 @@ public class DutyScheduleService {
      */
     @Transactional
     public Long createDutySchedule(DutyScheduleSaveRequest request) {
+        // 校验工作人员是否存在且启用
+        StaffProfile staffProfile = staffProfileMapper.selectById(request.getStaffId());
+        if (staffProfile == null) {
+            throw new BusinessException(404, "工作人员不存在");
+        }
+        if (staffProfile.getStatus() != 1) {
+            throw new BusinessException(400, "只有启用工作人员才能排班");
+        }
+        
         // 检查冲突
         checkConflict(request.getStaffId(), request.getDutyDate(), request.getSlotId(), null);
         
@@ -93,6 +108,15 @@ public class DutyScheduleService {
         DutySchedule existing = dutyScheduleMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "值班安排不存在");
+        }
+        
+        // 校验工作人员是否存在且启用
+        StaffProfile staffProfile = staffProfileMapper.selectById(request.getStaffId());
+        if (staffProfile == null) {
+            throw new BusinessException(404, "工作人员不存在");
+        }
+        if (staffProfile.getStatus() != 1) {
+            throw new BusinessException(400, "只有启用工作人员才能排班");
         }
         
         // 检查冲突（排除自身）
@@ -189,6 +213,15 @@ public class DutyScheduleService {
      */
     @Transactional
     public BatchScheduleResponse batchCreateDutySchedules(BatchScheduleRequest request) {
+        // 校验工作人员是否存在且启用
+        StaffProfile staffProfile = staffProfileMapper.selectById(request.getStaffId());
+        if (staffProfile == null) {
+            throw new BusinessException(404, "工作人员不存在");
+        }
+        if (staffProfile.getStatus() != 1) {
+            throw new BusinessException(400, "只有启用工作人员才能排班");
+        }
+        
         BatchScheduleResponse response = new BatchScheduleResponse();
         List<BatchScheduleResponse.ConflictInfo> conflicts = new ArrayList<>();
         int createdCount = 0;
