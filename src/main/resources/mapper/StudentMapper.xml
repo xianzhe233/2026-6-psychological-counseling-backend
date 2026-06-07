@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.student.mapper.StudentMapper">
+    
+    <!-- 首访登记表 -->
+    <select id="selectLatestFirstVisitForm" resultType="com.tyut.psychological.student.entity.FirstVisitForm">
+        SELECT * FROM first_visit_form 
+        WHERE student_id = #{studentId} 
+        ORDER BY create_time DESC 
+        LIMIT 1
+    </select>
+    
+    <insert id="insertFirstVisitForm" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO first_visit_form (
+            student_id, main_problem, problem_description, expected_help,
+            mood_score, sleep_score, stress_score, self_harm_flag, emergency_flag,
+            risk_score, risk_level, form_status, submit_time, create_time, update_time
+        ) VALUES (
+            #{studentId}, #{mainProblem}, #{problemDescription}, #{expectedHelp},
+            #{moodScore}, #{sleepScore}, #{stressScore}, #{selfHarmFlag}, #{emergencyFlag},
+            #{riskScore}, #{riskLevel}, #{formStatus}, #{submitTime}, #{createTime}, #{updateTime}
+        )
+    </insert>
+    
+    <update id="updateFirstVisitForm">
+        UPDATE first_visit_form SET
+            main_problem = #{mainProblem},
+            problem_description = #{problemDescription},
+            expected_help = #{expectedHelp},
+            mood_score = #{moodScore},
+            sleep_score = #{sleepScore},
+            stress_score = #{stressScore},
+            self_harm_flag = #{selfHarmFlag},
+            emergency_flag = #{emergencyFlag},
+            risk_score = #{riskScore},
+            risk_level = #{riskLevel},
+            form_status = #{formStatus},
+            submit_time = #{submitTime},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 知情同意书 -->
+    <select id="selectConsentRecordByFormId" resultType="com.tyut.psychological.student.entity.ConsentRecord">
+        SELECT * FROM consent_record WHERE form_id = #{formId}
+    </select>
+    
+    <insert id="insertConsentRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO consent_record (
+            form_id, student_id, consent_version, sign_time, create_time
+        ) VALUES (
+            #{formId}, #{studentId}, #{consentVersion}, #{signTime}, #{createTime}
+        )
+    </insert>
+    
+    <!-- 值班安排 -->
+    <select id="selectAvailableDutySchedules" resultType="com.tyut.psychological.student.entity.DutySchedule">
+        SELECT * FROM duty_schedule 
+        WHERE duty_date = #{date} 
+        AND status = 1
+        <if test="interviewerId != null">
+            AND staff_id = #{interviewerId}
+        </if>
+        AND reserved_count < capacity
+    </select>
+    
+    <select id="selectDutyScheduleById" resultType="com.tyut.psychological.student.entity.DutySchedule">
+        SELECT * FROM duty_schedule WHERE id = #{id}
+    </select>
+    
+    <update id="updateDutyScheduleReservedCount">
+        UPDATE duty_schedule SET 
+            reserved_count = reserved_count + #{increment},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 预约 -->
+    <insert id="insertFirstVisitAppointment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO first_visit_appointment (
+            appointment_no, form_id, student_id, duty_schedule_id,
+            appointment_date, slot_id, slot_name, start_time, end_time,
+            interviewer_id, interviewer_name, room_id, room_name,
+            appointment_status, create_time, update_time
+        ) VALUES (
+            #{appointmentNo}, #{formId}, #{studentId}, #{dutyScheduleId},
+            #{appointmentDate}, #{slotId}, #{slotName}, #{startTime}, #{endTime},
+            #{interviewerId}, #{interviewerName}, #{roomId}, #{roomName},
+            #{appointmentStatus}, #{createTime}, #{updateTime}
+        )
+    </insert>
+    
+    <select id="selectAppointmentById" resultType="com.tyut.psychological.student.entity.FirstVisitAppointment">
+        SELECT * FROM first_visit_appointment WHERE id = #{id}
+    </select>
+    
+    <select id="selectAppointmentsByStudentId" resultType="com.tyut.psychological.student.entity.FirstVisitAppointment">
+        SELECT * FROM first_visit_appointment 
+        WHERE student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND appointment_status = #{status}
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <select id="countAppointmentsByStudentId" resultType="long">
+        SELECT COUNT(*) FROM first_visit_appointment 
+        WHERE student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND appointment_status = #{status}
+        </if>
+    </select>
+    
+    <update id="updateAppointmentStatus">
+        UPDATE first_visit_appointment SET
+            appointment_status = #{status},
+            <if test="status == 'CANCELED'">
+                reject_reason = #{reason},
+            </if>
+            <if test="status == 'REJECTED'">
+                reject_reason = #{reason},
+            </if>
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 通知 -->
+    <select id="selectNotificationsByStudentId" resultType="com.tyut.psychological.student.entity.NotificationLog">
+        SELECT * FROM notification_log 
+        WHERE user_id = #{studentId}
+        ORDER BY send_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <select id="countNotificationsByStudentId" resultType="long">
+        SELECT COUNT(*) FROM notification_log WHERE user_id = #{studentId}
+    </select>
+    
+</mapper>
