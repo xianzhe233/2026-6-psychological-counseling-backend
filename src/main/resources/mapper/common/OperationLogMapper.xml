@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.common.log.mapper.OperationLogMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO operation_log (
+            operator_user_id, operator_name, role_code, module_name, operation_type,
+            operation_desc, request_url, result_status, error_message, ip_address,
+            execution_time, create_time
+        ) VALUES (
+            #{operatorUserId}, #{operatorName}, #{roleCode}, #{moduleName}, #{operationType},
+            #{operationDesc}, #{requestUrl}, #{resultStatus}, #{errorMessage}, #{ipAddress},
+            #{executionTime}, NOW()
+        )
+    </insert>
+
+</mapper>
