@@ -26,6 +26,61 @@
 
 当前已可基于 MySQL 初始化项目数据库，完成数据库认证，并支撑管理员基础管理页面与学生“首访登记表 → 知情同意书”最小链路联调。
 
+## 2026-06-07 整理并接入 ltb 阶段5后端接口
+
+### 完成内容
+
+- 在当前 `dev` 基线上整理 `dev-ltb` 的有效业务提交，去掉 README/test 噪音提交，仅保留阶段5相关接口与修复。
+- 新增管理员值班管理接口：分页、创建、修改、批量排班。
+- 新增管理员初访预约审核接口：审核列表、详情、通过、驳回、改约、标记优先。
+- 新增 `FirstVisitAppointment`、`DutySchedule` 相关实体、DTO、VO、Mapper、Service 与 XML。
+- 新增通知日志与操作日志的基础实体、Mapper、Service。
+- 调整 `PsychologicalApplication` 的 `@MapperScan` 为全包扫描，并补上工作人员启用状态校验。
+- 将整理后的阶段5代码在 `dev-qxz` 上通过 `./mvnw test` 验证，确认可继续联调与后续开发。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/PsychologicalApplication.java`
+- `src/main/java/com/tyut/psychological/appointment/**`
+- `src/main/java/com/tyut/psychological/common/log/**`
+- `src/main/java/com/tyut/psychological/common/notification/**`
+- `src/main/java/com/tyut/psychological/schedule/controller/DutyScheduleController.java`
+- `src/main/java/com/tyut/psychological/schedule/dto/BatchScheduleRequest.java`
+- `src/main/java/com/tyut/psychological/schedule/dto/BatchScheduleResponse.java`
+- `src/main/java/com/tyut/psychological/schedule/dto/DutyScheduleSaveRequest.java`
+- `src/main/java/com/tyut/psychological/schedule/entity/DutySchedule.java`
+- `src/main/java/com/tyut/psychological/schedule/mapper/DutyScheduleMapper.java`
+- `src/main/java/com/tyut/psychological/schedule/service/DutyScheduleService.java`
+- `src/main/java/com/tyut/psychological/schedule/vo/DutyScheduleVO.java`
+- `src/main/resources/mapper/appointment/FirstVisitAppointmentMapper.xml`
+- `src/main/resources/mapper/common/NotificationLogMapper.xml`
+- `src/main/resources/mapper/common/OperationLogMapper.xml`
+- `src/main/resources/mapper/schedule/DutyScheduleMapper.xml`
+- `docs/progress.md`
+
+### 接口变化
+
+- 新增 `GET /api/admin/duty-schedules`
+- 新增 `POST /api/admin/duty-schedules`
+- 新增 `PUT /api/admin/duty-schedules/{id}`
+- 新增 `POST /api/admin/duty-schedules/batch`
+- 新增 `GET /api/admin/first-visit/appointments`
+- 新增 `GET /api/admin/first-visit/appointments/{id}`
+- 新增 `POST /api/admin/first-visit/appointments/{id}/approve`
+- 新增 `POST /api/admin/first-visit/appointments/{id}/reject`
+- 新增 `POST /api/admin/first-visit/appointments/{id}/reschedule`
+- 新增 `POST /api/admin/first-visit/appointments/{id}/priority`
+
+### 验证方式
+
+- `./mvnw test`
+- `git cherry-pick` 整理阶段5有效提交后，确认 5 个提交均可无冲突落到当前 `dev` 基线
+
+### 遗留问题
+
+- 当前仅完成管理员值班与初访审核接口，学生预约提交、我的预约、初访员结果录入、咨询队列等后续阶段接口仍待继续完成。
+- 通知日志与操作日志目前提供了基础持久层与服务，日志查询接口仍未补齐。
+
 ## 2026-06-07 阶段四：后端基础信息接口
 
 ### 完成内容
@@ -166,11 +221,11 @@
 
 - [x] 咨询室管理接口。
 - [x] 时间段管理接口。
-- [ ] 值班分页接口。
-- [ ] 值班新增/编辑接口。
-- [ ] 值班冲突检测。
+- [x] 值班分页接口。
+- [x] 值班新增/编辑接口。
+- [x] 值班冲突检测。
 - [ ] 可预约时间段查询。
-- [ ] 批量排班接口（可选）。
+- [x] 批量排班接口（可选）。
 
 ### 阶段五：学生首访预约
 
@@ -185,12 +240,12 @@
 
 ### 阶段六：管理员审核
 
-- [ ] 初访预约审核列表。
-- [ ] 预约详情接口。
-- [ ] 审核通过。
-- [ ] 驳回预约。
-- [ ] 改约。
-- [ ] 标记优先。
+- [x] 初访预约审核列表。
+- [x] 预约详情接口。
+- [x] 审核通过。
+- [x] 驳回预约。
+- [x] 改约。
+- [x] 标记优先。
 - [ ] 审核通知日志。
 - [ ] 审核操作日志。
 
