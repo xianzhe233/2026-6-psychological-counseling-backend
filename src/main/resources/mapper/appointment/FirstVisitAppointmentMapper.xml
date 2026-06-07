@@ -97,7 +97,7 @@
             AND fva.appointment_date >= #{startDate}
         </if>
         <if test="endDate != null">
-            AND fva.appointment_date <= #{endDate}
+            AND fva.appointment_date &lt;= #{endDate}
         </if>
         <if test="priorityFlag != null">
             AND fva.priority_flag = #{priorityFlag}
@@ -135,7 +135,7 @@
             AND fva.appointment_date >= #{startDate}
         </if>
         <if test="endDate != null">
-            AND fva.appointment_date <= #{endDate}
+            AND fva.appointment_date &lt;= #{endDate}
         </if>
         <if test="priorityFlag != null">
             AND fva.priority_flag = #{priorityFlag}
