@@ -7,6 +7,11 @@ server:
 spring:
   application:
     name: psychological-counseling-backend
+  datasource:
+    url: jdbc:mysql://localhost:3306/psychological_counseling?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
@@ -18,5 +23,3 @@ mybatis:
 
 app:
   default-password: 123456
-
-# 当前骨架阶段先排除 DataSource 自动配置，后续接入 MySQL 时补充 datasource 配置并移除排除。

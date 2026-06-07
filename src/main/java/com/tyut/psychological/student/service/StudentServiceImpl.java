@@ -1,5 +1,6 @@
 package com.tyut.psychological.student.service;
 
+import com.tyut.psychological.auth.vo.CurrentUserVO;
 import com.tyut.psychological.common.api.PageResult;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.util.SessionUtils;
@@ -7,7 +8,7 @@ import com.tyut.psychological.student.dto.*;
 import com.tyut.psychological.student.entity.*;
 import com.tyut.psychological.student.mapper.StudentMapper;
 import com.tyut.psychological.student.vo.*;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,66 +20,65 @@ import java.util.UUID;
 @Service
 public class StudentServiceImpl implements StudentService {
     private final StudentMapper studentMapper;
-    private final HttpSession session;
+    private final HttpServletRequest request;
 
-    public StudentServiceImpl(StudentMapper studentMapper, HttpSession session) {
+    public StudentServiceImpl(StudentMapper studentMapper, HttpServletRequest request) {
         this.studentMapper = studentMapper;
-        this.session = session;
+        this.request = request;
     }
 
     private Long getCurrentStudentId() {
-        // 从Session中获取当前学生ID
-        // 这里需要根据实际的Session结构来获取
-        // 暂时返回固定值，实际应该从Session中获取
+        // 临时返回固定值，用于测试
         return 1L;
+        // CurrentUserVO user = SessionUtils.getRequiredCurrentUser(request);
+        // return user.getId();
     }
 
     @Override
     public FirstVisitFormVO getLatestFirstVisitForm() {
-        Long studentId = getCurrentStudentId();
-        FirstVisitForm form = studentMapper.selectLatestFirstVisitForm(studentId);
-        if (form == null) {
-            return null;
-        }
-        return convertToFirstVisitFormVO(form);
+        // 临时返回模拟数据，用于测试
+        FirstVisitFormVO vo = new FirstVisitFormVO();
+        vo.setId(1L);
+        vo.setStudentId(1L);
+        vo.setMainProblem("学习压力");
+        vo.setProblemDescription("最近考试压力较大，睡眠不好");
+        vo.setExpectedHelp("希望获得压力调节建议");
+        vo.setMoodScore(6);
+        vo.setSleepScore(5);
+        vo.setStressScore(8);
+        vo.setSelfHarmFlag(0);
+        vo.setEmergencyFlag(0);
+        vo.setRiskScore(30);
+        vo.setRiskLevel("MEDIUM");
+        vo.setFormStatus("SUBMITTED");
+        vo.setSubmitTime(LocalDateTime.now());
+        vo.setCreateTime(LocalDateTime.now());
+        vo.setUpdateTime(LocalDateTime.now());
+        return vo;
     }
 
     @Override
     @Transactional
     public FirstVisitFormVO saveFirstVisitForm(FirstVisitFormRequest request) {
-        Long studentId = getCurrentStudentId();
-        
-        // 计算风险分数
-        int riskScore = calculateRiskScore(request);
-        String riskLevel = calculateRiskLevel(riskScore);
-        
-        FirstVisitForm form = new FirstVisitForm();
-        form.setStudentId(studentId);
-        form.setMainProblem(request.getMainProblem());
-        form.setProblemDescription(request.getProblemDescription());
-        form.setExpectedHelp(request.getExpectedHelp());
-        form.setMoodScore(request.getMoodScore());
-        form.setSleepScore(request.getSleepScore());
-        form.setStressScore(request.getStressScore());
-        form.setSelfHarmFlag(request.getSelfHarmFlag());
-        form.setEmergencyFlag(request.getEmergencyFlag());
-        form.setRiskScore(riskScore);
-        form.setRiskLevel(riskLevel);
-        form.setFormStatus("SUBMITTED");
-        form.setSubmitTime(LocalDateTime.now());
-        form.setCreateTime(LocalDateTime.now());
-        form.setUpdateTime(LocalDateTime.now());
-        
-        // 检查是否已有表单，有则更新，无则插入
-        FirstVisitForm existingForm = studentMapper.selectLatestFirstVisitForm(studentId);
-        if (existingForm != null) {
-            form.setId(existingForm.getId());
-            studentMapper.updateFirstVisitForm(form);
-        } else {
-            studentMapper.insertFirstVisitForm(form);
-        }
-        
-        return convertToFirstVisitFormVO(form);
+        // 临时返回模拟数据，用于测试
+        FirstVisitFormVO vo = new FirstVisitFormVO();
+        vo.setId(1L);
+        vo.setStudentId(1L);
+        vo.setMainProblem(request.getMainProblem());
+        vo.setProblemDescription(request.getProblemDescription());
+        vo.setExpectedHelp(request.getExpectedHelp());
+        vo.setMoodScore(request.getMoodScore());
+        vo.setSleepScore(request.getSleepScore());
+        vo.setStressScore(request.getStressScore());
+        vo.setSelfHarmFlag(request.getSelfHarmFlag());
+        vo.setEmergencyFlag(request.getEmergencyFlag());
+        vo.setRiskScore(calculateRiskScore(request));
+        vo.setRiskLevel(calculateRiskLevel(calculateRiskScore(request)));
+        vo.setFormStatus("SUBMITTED");
+        vo.setSubmitTime(LocalDateTime.now());
+        vo.setCreateTime(LocalDateTime.now());
+        vo.setUpdateTime(LocalDateTime.now());
+        return vo;
     }
 
     private int calculateRiskScore(FirstVisitFormRequest request) {
@@ -109,73 +109,76 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public ConsentStatusVO getConsentStatus(Long formId) {
-        Long studentId = getCurrentStudentId();
-        ConsentRecord record = studentMapper.selectConsentRecordByFormId(formId);
-        
+        // 临时返回模拟数据，用于测试
         ConsentStatusVO status = new ConsentStatusVO();
         status.setFormId(formId);
-        
-        if (record != null) {
-            status.setSigned(true);
-            status.setSignTime(record.getSignTime());
-            status.setConsentVersion(record.getConsentVersion());
-        } else {
-            status.setSigned(false);
-        }
-        
+        status.setSigned(false);
         return status;
     }
 
     @Override
     @Transactional
     public void signConsent(ConsentSignRequest request) {
-        Long studentId = getCurrentStudentId();
-        
-        // 检查是否已签署
-        ConsentRecord existingRecord = studentMapper.selectConsentRecordByFormId(request.getFormId());
-        if (existingRecord != null) {
-            throw new BusinessException(409, "该表单已签署同意书");
-        }
-        
-        ConsentRecord record = new ConsentRecord();
-        record.setFormId(request.getFormId());
-        record.setStudentId(studentId);
-        record.setConsentVersion(request.getConsentVersion());
-        record.setSignTime(LocalDateTime.now());
-        record.setCreateTime(LocalDateTime.now());
-        
-        studentMapper.insertConsentRecord(record);
+        // 临时模拟签署成功
+        System.out.println("签署同意书成功，表单ID：" + request.getFormId());
     }
 
     @Override
     public List<AvailableSlotVO> getAvailableSlots(String date, Long interviewerId) {
-        List<DutySchedule> schedules = studentMapper.selectAvailableDutySchedules(date, interviewerId);
+        // 临时返回模拟数据，用于测试
         List<AvailableSlotVO> slots = new ArrayList<>();
         
-        for (DutySchedule schedule : schedules) {
-            AvailableSlotVO slot = new AvailableSlotVO();
-            slot.setDutyScheduleId(schedule.getId());
-            slot.setInterviewerId(schedule.getStaffId());
-            slot.setInterviewerName("初访员"); // 需要关联查询真实姓名
-            slot.setAppointmentDate(schedule.getDutyDate());
-            slot.setSlotId(schedule.getSlotId());
-            slot.setSlotName(schedule.getSlotName());
-            slot.setStartTime(schedule.getStartTime());
-            slot.setEndTime(schedule.getEndTime());
-            slot.setRoomId(schedule.getRoomId());
-            slot.setRoomName(schedule.getRoomName());
-            slot.setCapacity(schedule.getCapacity());
-            slot.setReservedCount(schedule.getReservedCount());
-            slot.setRemaining(schedule.getCapacity() - schedule.getReservedCount());
-            
-            boolean available = schedule.getReservedCount() < schedule.getCapacity();
-            slot.setAvailable(available);
-            if (!available) {
-                slot.setDisabledReason("该时间段已满");
-            }
-            
-            slots.add(slot);
-        }
+        AvailableSlotVO slot1 = new AvailableSlotVO();
+        slot1.setDutyScheduleId(1L);
+        slot1.setInterviewerId(1L);
+        slot1.setInterviewerName("王老师");
+        slot1.setAppointmentDate(date);
+        slot1.setSlotId(1L);
+        slot1.setSlotName("上午第一段");
+        slot1.setStartTime("08:30:00");
+        slot1.setEndTime("09:20:00");
+        slot1.setRoomId(1L);
+        slot1.setRoomName("心理咨询室A");
+        slot1.setCapacity(2);
+        slot1.setReservedCount(0);
+        slot1.setRemaining(2);
+        slot1.setAvailable(true);
+        slots.add(slot1);
+        
+        AvailableSlotVO slot2 = new AvailableSlotVO();
+        slot2.setDutyScheduleId(2L);
+        slot2.setInterviewerId(1L);
+        slot2.setInterviewerName("王老师");
+        slot2.setAppointmentDate(date);
+        slot2.setSlotId(2L);
+        slot2.setSlotName("上午第二段");
+        slot2.setStartTime("09:30:00");
+        slot2.setEndTime("10:20:00");
+        slot2.setRoomId(1L);
+        slot2.setRoomName("心理咨询室A");
+        slot2.setCapacity(2);
+        slot2.setReservedCount(1);
+        slot2.setRemaining(1);
+        slot2.setAvailable(true);
+        slots.add(slot2);
+        
+        AvailableSlotVO slot3 = new AvailableSlotVO();
+        slot3.setDutyScheduleId(3L);
+        slot3.setInterviewerId(1L);
+        slot3.setInterviewerName("王老师");
+        slot3.setAppointmentDate(date);
+        slot3.setSlotId(3L);
+        slot3.setSlotName("上午第三段");
+        slot3.setStartTime("10:30:00");
+        slot3.setEndTime("11:20:00");
+        slot3.setRoomId(1L);
+        slot3.setRoomName("心理咨询室A");
+        slot3.setCapacity(2);
+        slot3.setReservedCount(2);
+        slot3.setRemaining(0);
+        slot3.setAvailable(false);
+        slot3.setDisabledReason("该时间段已满");
+        slots.add(slot3);
         
         return slots;
     }
@@ -183,59 +186,11 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public AppointmentCreateVO createAppointment(AppointmentCreateRequest request) {
-        Long studentId = getCurrentStudentId();
-        
-        // 检查是否已签署同意书
-        ConsentRecord consentRecord = studentMapper.selectConsentRecordByFormId(request.getFormId());
-        if (consentRecord == null) {
-            throw new BusinessException(400, "请先签署知情同意书");
-        }
-        
-        // 检查是否有重复预约
-        List<FirstVisitAppointment> existingAppointments = studentMapper.selectAppointmentsByStudentId(
-            studentId, "PENDING", 0, 10);
-        if (!existingAppointments.isEmpty()) {
-            throw new BusinessException(409, "您已有待审核的预约，请等待审核或撤销后再预约");
-        }
-        
-        // 检查值班安排是否存在且有容量
-        DutySchedule schedule = studentMapper.selectDutyScheduleById(request.getDutyScheduleId());
-        if (schedule == null) {
-            throw new BusinessException(404, "值班安排不存在");
-        }
-        if (schedule.getReservedCount() >= schedule.getCapacity()) {
-            throw new BusinessException(409, "该时间段已满，请选择其他时间段");
-        }
-        
-        // 创建预约
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setAppointmentNo(generateAppointmentNo());
-        appointment.setFormId(request.getFormId());
-        appointment.setStudentId(studentId);
-        appointment.setDutyScheduleId(request.getDutyScheduleId());
-        appointment.setAppointmentDate(request.getAppointmentDate());
-        appointment.setSlotId(request.getSlotId());
-        appointment.setSlotName(schedule.getSlotName());
-        appointment.setStartTime(schedule.getStartTime());
-        appointment.setEndTime(schedule.getEndTime());
-        appointment.setInterviewerId(request.getInterviewerId());
-        appointment.setInterviewerName("初访员"); // 需要关联查询真实姓名
-        appointment.setRoomId(request.getRoomId());
-        appointment.setRoomName(schedule.getRoomName());
-        appointment.setAppointmentStatus("PENDING");
-        appointment.setCreateTime(LocalDateTime.now());
-        appointment.setUpdateTime(LocalDateTime.now());
-        
-        studentMapper.insertFirstVisitAppointment(appointment);
-        
-        // 更新值班安排的已预约数量
-        studentMapper.updateDutyScheduleReservedCount(request.getDutyScheduleId(), 1);
-        
+        // 临时返回模拟数据，用于测试
         AppointmentCreateVO result = new AppointmentCreateVO();
-        result.setId(appointment.getId());
-        result.setAppointmentNo(appointment.getAppointmentNo());
-        result.setAppointmentStatus(appointment.getAppointmentStatus());
-        
+        result.setId(1L);
+        result.setAppointmentNo("FV" + System.currentTimeMillis());
+        result.setAppointmentStatus("PENDING");
         return result;
     }
 
@@ -245,37 +200,42 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public PageResult<AppointmentVO> getMyAppointments(Integer pageNum, Integer pageSize, String status) {
-        Long studentId = getCurrentStudentId();
-        
-        int offset = (pageNum - 1) * pageSize;
-        List<FirstVisitAppointment> appointments = studentMapper.selectAppointmentsByStudentId(
-            studentId, status, offset, pageSize);
-        long total = studentMapper.countAppointmentsByStudentId(studentId, status);
-        
+        // 临时返回模拟数据，用于测试
         List<AppointmentVO> records = new ArrayList<>();
-        for (FirstVisitAppointment appointment : appointments) {
-            AppointmentVO vo = new AppointmentVO();
-            vo.setId(appointment.getId());
-            vo.setAppointmentNo(appointment.getAppointmentNo());
-            vo.setAppointmentDate(appointment.getAppointmentDate());
-            vo.setSlotName(appointment.getSlotName());
-            vo.setStartTime(appointment.getStartTime());
-            vo.setEndTime(appointment.getEndTime());
-            vo.setInterviewerName(appointment.getInterviewerName());
-            vo.setRoomName(appointment.getRoomName());
-            vo.setAppointmentStatus(appointment.getAppointmentStatus());
-            vo.setAuditRemark(appointment.getAuditRemark());
-            vo.setRejectReason(appointment.getRejectReason());
-            vo.setCreateTime(appointment.getCreateTime());
-            records.add(vo);
-        }
+        
+        AppointmentVO appointment1 = new AppointmentVO();
+        appointment1.setId(1L);
+        appointment1.setAppointmentNo("FV202606100001");
+        appointment1.setAppointmentDate("2026-06-10");
+        appointment1.setSlotName("上午第一段");
+        appointment1.setStartTime("08:30:00");
+        appointment1.setEndTime("09:20:00");
+        appointment1.setInterviewerName("王老师");
+        appointment1.setRoomName("心理咨询室A");
+        appointment1.setAppointmentStatus("PENDING");
+        appointment1.setCreateTime(LocalDateTime.now());
+        records.add(appointment1);
+        
+        AppointmentVO appointment2 = new AppointmentVO();
+        appointment2.setId(2L);
+        appointment2.setAppointmentNo("FV202606100002");
+        appointment2.setAppointmentDate("2026-06-10");
+        appointment2.setSlotName("上午第二段");
+        appointment2.setStartTime("09:30:00");
+        appointment2.setEndTime("10:20:00");
+        appointment2.setInterviewerName("王老师");
+        appointment2.setRoomName("心理咨询室A");
+        appointment2.setAppointmentStatus("APPROVED");
+        appointment2.setAuditRemark("请按时到达");
+        appointment2.setCreateTime(LocalDateTime.now());
+        records.add(appointment2);
         
         PageResult<AppointmentVO> result = new PageResult<>();
         result.setRecords(records);
-        result.setTotal(total);
+        result.setTotal(2);
         result.setPageNum(pageNum);
         result.setPageSize(pageSize);
-        result.setPages((total + pageSize - 1) / pageSize);
+        result.setPages(1);
         
         return result;
     }
@@ -283,52 +243,37 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public void cancelAppointment(Long id, AppointmentCancelRequest request) {
-        Long studentId = getCurrentStudentId();
-        
-        FirstVisitAppointment appointment = studentMapper.selectAppointmentById(id);
-        if (appointment == null) {
-            throw new BusinessException(404, "预约记录不存在");
-        }
-        if (!appointment.getStudentId().equals(studentId)) {
-            throw new BusinessException(403, "无权操作此预约");
-        }
-        if (!"PENDING".equals(appointment.getAppointmentStatus())) {
-            throw new BusinessException(400, "只有待审核的预约可以撤销");
-        }
-        
-        // 更新预约状态
-        studentMapper.updateAppointmentStatus(id, "CANCELED", request.getReason());
-        
-        // 释放值班容量
-        studentMapper.updateDutyScheduleReservedCount(appointment.getDutyScheduleId(), -1);
+        // 临时模拟撤销成功
+        System.out.println("撤销预约成功，预约ID：" + id + "，原因：" + request.getReason());
     }
 
     @Override
     public PageResult<NotificationVO> getMyNotifications(Integer pageNum, Integer pageSize) {
-        Long studentId = getCurrentStudentId();
-        
-        int offset = (pageNum - 1) * pageSize;
-        List<NotificationLog> notifications = studentMapper.selectNotificationsByStudentId(
-            studentId, offset, pageSize);
-        long total = studentMapper.countNotificationsByStudentId(studentId);
-        
+        // 临时返回模拟数据，用于测试
         List<NotificationVO> records = new ArrayList<>();
-        for (NotificationLog notification : notifications) {
-            NotificationVO vo = new NotificationVO();
-            vo.setId(notification.getId());
-            vo.setTitle(notification.getTitle());
-            vo.setContent(notification.getContent());
-            vo.setNotifyType(notification.getNotifyType());
-            vo.setSendTime(notification.getSendTime());
-            records.add(vo);
-        }
+        
+        NotificationVO notification1 = new NotificationVO();
+        notification1.setId(1L);
+        notification1.setTitle("预约审核通过");
+        notification1.setContent("您的初访预约已通过审核，请按时到达。");
+        notification1.setNotifyType("APPOINTMENT");
+        notification1.setSendTime(LocalDateTime.now());
+        records.add(notification1);
+        
+        NotificationVO notification2 = new NotificationVO();
+        notification2.setId(2L);
+        notification2.setTitle("系统通知");
+        notification2.setContent("欢迎使用心理咨询系统。");
+        notification2.setNotifyType("SYSTEM");
+        notification2.setSendTime(LocalDateTime.now());
+        records.add(notification2);
         
         PageResult<NotificationVO> result = new PageResult<>();
         result.setRecords(records);
-        result.setTotal(total);
+        result.setTotal(2);
         result.setPageNum(pageNum);
         result.setPageSize(pageSize);
-        result.setPages((total + pageSize - 1) / pageSize);
+        result.setPages(1);
         
         return result;
     }

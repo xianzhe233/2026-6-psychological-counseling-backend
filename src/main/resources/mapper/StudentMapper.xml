@@ -61,7 +61,7 @@
         <if test="interviewerId != null">
             AND staff_id = #{interviewerId}
         </if>
-        AND reserved_count < capacity
+        AND reserved_count &lt; capacity
     </select>
     
     <select id="selectDutyScheduleById" resultType="com.tyut.psychological.student.entity.DutySchedule">
