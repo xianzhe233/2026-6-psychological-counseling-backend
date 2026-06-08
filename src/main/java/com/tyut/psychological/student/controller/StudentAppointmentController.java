@@ -1,7 +1,14 @@
 package com.tyut.psychological.student.controller;
 
 import com.tyut.psychological.common.api.Result;
+import com.tyut.psychological.common.util.SessionUtils;
+import com.tyut.psychological.student.dto.AppointmentCreateRequest;
+import com.tyut.psychological.student.service.StudentAppointmentService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +24,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/student")
 public class StudentAppointmentController {
+    private final StudentAppointmentService appointmentService;
+    
+    public StudentAppointmentController(StudentAppointmentService appointmentService) {
+        this.appointmentService = appointmentService;
+    }
 
     @GetMapping("/appointments/available-slots")
     public Result<List<Map<String, Object>>> getAvailableSlots(
@@ -82,5 +94,14 @@ public class StudentAppointmentController {
         slots.add(slot3);
         
         return Result.success(slots);
+    }
+    
+    @PostMapping("/appointments")
+    public Result<Map<String, Object>> createAppointment(
+            @Valid @RequestBody AppointmentCreateRequest request,
+            HttpServletRequest httpRequest) {
+        Long studentId = SessionUtils.getRequiredCurrentUser(httpRequest).getId();
+        Map<String, Object> result = appointmentService.createAppointment(studentId, request);
+        return Result.success(result);
     }
 }
