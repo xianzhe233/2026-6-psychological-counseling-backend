@@ -382,6 +382,49 @@
 - 目前认证使用内存临时账号，尚未接真实数据库和用户表。
 - 业务模块、SQL 脚本和 Mapper 仍待继续实现。
 
+## 2026-06-08 阶段四：咨询队列与咨询安排（dev-zyt）
+
+### 完成内容
+
+- 新增 `consultation` 模块：咨询队列分页/详情/暂缓、正式咨询安排创建/列表/取消。
+- 实现咨询师可用时间查询，基于值班安排并标记冲突不可用原因。
+- 实现咨询师、学生、咨询室三方时间冲突检测，409 响应携带 `conflicts` 明细。
+- 安排成功后更新队列状态为 `ARRANGED`，并写入通知日志与操作日志。
+- 扩展 `BusinessException` 支持附带 `data` 载荷，供冲突响应使用。
+- 补充 `init_data.sql` 演示数据：咨询师值班、初访结果、3 条 WAITING 队列。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/consultation/**`
+- `src/main/resources/mapper/consultation/**`
+- `src/main/java/com/tyut/psychological/common/exception/BusinessException.java`
+- `src/main/java/com/tyut/psychological/common/exception/GlobalExceptionHandler.java`
+- `src/main/java/com/tyut/psychological/common/notification/service/NotificationLogService.java`
+- `sql/init_data.sql`
+- `docs/progress.md`
+
+### 接口变化
+
+- 新增 `GET /api/assistant/consultation/queue`
+- 新增 `GET /api/assistant/consultation/queue/{id}`
+- 新增 `POST /api/assistant/consultation/queue/{id}/suspend`
+- 新增 `GET /api/assistant/counselors/available-slots`
+- 新增 `POST /api/assistant/consultation/schedules`
+- 新增 `GET /api/assistant/consultation/schedules`
+- 新增 `POST /api/assistant/consultation/schedules/{id}/cancel`
+
+### 验证方式
+
+- `./mvnw compile -DskipTests` 通过
+- 使用心理助理账号 `assistant/123456` 调用上述接口
+
+### 遗留问题
+
+- 前端仍使用 mock，阶段七联调时再切换真实接口
+- 初访结果入队（`enqueue`）仍依赖 ltb 初访员接口，当前靠演示数据支撑
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text

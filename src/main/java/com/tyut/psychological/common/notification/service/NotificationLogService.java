@@ -81,4 +81,23 @@ public class NotificationLogService {
                         "，时间段：" + slotName + "，地点：" + roomName;
         log(receiverUserId, receiverName, phone, "APPOINTMENT_RESCHEDULED", title, content, appointmentId);
     }
+
+    public void logConsultationArranged(Long receiverUserId, String receiverName, String phone,
+                                        Long scheduleId, String consultationDate,
+                                        String slotName, String roomName) {
+        String title = "正式咨询安排通知";
+        String content = "您的正式咨询已安排，日期：" + consultationDate
+                + "，时间段：" + slotName + "，地点：" + roomName;
+        log(receiverUserId, receiverName, phone, "CONSULTATION_ARRANGED", title, content, scheduleId);
+    }
+
+    public void logConsultationCanceled(Long receiverUserId, String receiverName, String phone,
+                                        Long scheduleId, String consultationDate,
+                                        String slotName, String roomName, String reason) {
+        String title = "咨询安排取消通知";
+        String content = "您的正式咨询安排已取消，原日期：" + consultationDate
+                + "，时间段：" + slotName + "，地点：" + roomName
+                + "，原因：" + reason;
+        log(receiverUserId, receiverName, phone, "CONSULTATION_CANCELED", title, content, scheduleId);
+    }
 }

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.consultation.mapper.ConsultationScheduleMapper">
+
+    <sql id="activeScheduleFilter">
+        schedule_status != 'CANCELED'
+    </sql>
+
+    <select id="selectById" resultType="com.tyut.psychological.consultation.entity.ConsultationSchedule">
+        SELECT * FROM consultation_schedule WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO consultation_schedule (
+            schedule_no, queue_id, student_id, counselor_id, assistant_id,
+            consultation_date, slot_id, room_id, session_no, source_type,
+            schedule_status, create_time
+        ) VALUES (
+            #{scheduleNo}, #{queueId}, #{studentId}, #{counselorId}, #{assistantId},
+            #{consultationDate}, #{slotId}, #{roomId}, #{sessionNo}, #{sourceType},
+            #{scheduleStatus}, NOW()
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE consultation_schedule
+        SET schedule_status = #{scheduleStatus},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="checkCounselorConflict" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE counselor_id = #{counselorId}
+          AND consultation_date = #{consultationDate}
+          AND slot_id = #{slotId}
+          AND <include refid="activeScheduleFilter"/>
+          <if test="excludeId != null">
+              AND id != #{excludeId}
+          </if>
+    </select>
+
+    <select id="checkStudentConflict" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE student_id = #{studentId}
+          AND consultation_date = #{consultationDate}
+          AND slot_id = #{slotId}
+          AND <include refid="activeScheduleFilter"/>
+          <if test="excludeId != null">
+              AND id != #{excludeId}
+          </if>
+    </select>
+
+    <select id="checkRoomConflict" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE room_id = #{roomId}
+          AND consultation_date = #{consultationDate}
+          AND slot_id = #{slotId}
+          AND <include refid="activeScheduleFilter"/>
+          <if test="excludeId != null">
+              AND id != #{excludeId}
+          </if>
+    </select>
+
+    <select id="countCounselorDuty" resultType="long">
+        SELECT COUNT(*) FROM duty_schedule
+        WHERE staff_id = #{counselorId}
+          AND staff_type = 'COUNSELOR'
+          AND duty_date = #{consultationDate}
+          AND slot_id = #{slotId}
+          AND status = 1
+    </select>
+
+    <select id="selectNextSessionNo" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(session_no), 0) + 1
+        FROM consultation_schedule
+        WHERE student_id = #{studentId}
+          AND counselor_id = #{counselorId}
+          AND <include refid="activeScheduleFilter"/>
+    </select>
+
+    <select id="countScheduleNoByPrefix" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE schedule_no LIKE CONCAT(#{prefix}, '%')
+    </select>
+
+    <sql id="scheduleWhere">
+        <if test="query.studentKeyword != null and query.studentKeyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+        </if>
+        <if test="query.counselorId != null">
+            AND cs.counselor_id = #{query.counselorId}
+        </if>
+        <if test="query.startDate != null">
+            AND cs.consultation_date &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND cs.consultation_date &lt;= #{query.endDate}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND cs.schedule_status = #{query.status}
+        </if>
+    </sql>
+
+    <select id="pageForAssistant" resultType="com.tyut.psychological.consultation.vo.ConsultationScheduleVO">
+        SELECT
+            cs.id,
+            cs.schedule_no,
+            cs.queue_id,
+            cs.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            cs.counselor_id,
+            counselor_su.real_name AS counselor_name,
+            cs.assistant_id,
+            assistant_su.real_name AS assistant_name,
+            cs.consultation_date,
+            cs.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            cs.room_id,
+            cr.room_name,
+            cs.session_no,
+            cs.schedule_status,
+            cs.create_time
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN staff_profile csp ON cs.counselor_id = csp.id
+        LEFT JOIN sys_user counselor_su ON csp.user_id = counselor_su.id
+        LEFT JOIN staff_profile asp ON cs.assistant_id = asp.id
+        LEFT JOIN sys_user assistant_su ON asp.user_id = assistant_su.id
+        LEFT JOIN time_slot ts ON cs.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON cs.room_id = cr.id
+        WHERE 1=1
+        <include refid="scheduleWhere"/>
+        ORDER BY cs.consultation_date DESC, ts.start_time ASC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForAssistant" resultType="long">
+        SELECT COUNT(*)
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        WHERE 1=1
+        <include refid="scheduleWhere"/>
+    </select>
+
+    <select id="selectByQueueId" resultType="com.tyut.psychological.consultation.vo.ConsultationScheduleVO">
+        SELECT
+            cs.id,
+            cs.schedule_no,
+            cs.queue_id,
+            cs.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            cs.counselor_id,
+            counselor_su.real_name AS counselor_name,
+            cs.assistant_id,
+            assistant_su.real_name AS assistant_name,
+            cs.consultation_date,
+            cs.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            cs.room_id,
+            cr.room_name,
+            cs.session_no,
+            cs.schedule_status,
+            cs.create_time
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN staff_profile csp ON cs.counselor_id = csp.id
+        LEFT JOIN sys_user counselor_su ON csp.user_id = counselor_su.id
+        LEFT JOIN staff_profile asp ON cs.assistant_id = asp.id
+        LEFT JOIN sys_user assistant_su ON asp.user_id = assistant_su.id
+        LEFT JOIN time_slot ts ON cs.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON cs.room_id = cr.id
+        WHERE cs.queue_id = #{queueId}
+        ORDER BY cs.consultation_date DESC, ts.start_time ASC
+    </select>
+
+    <select id="countActiveByQueueId" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE queue_id = #{queueId}
+          AND <include refid="activeScheduleFilter"/>
+    </select>
+</mapper>
