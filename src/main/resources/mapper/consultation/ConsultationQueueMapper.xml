@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.consultation.mapper.ConsultationQueueMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.consultation.entity.ConsultationQueue">
+        SELECT * FROM consultation_queue WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO consultation_queue (
+            student_id, first_visit_result_id, problem_type_id, crisis_level,
+            priority_score, queue_status, enqueue_time, create_time
+        ) VALUES (
+            #{studentId}, #{firstVisitResultId}, #{problemTypeId}, #{crisisLevel},
+            #{priorityScore}, #{queueStatus}, #{enqueueTime}, NOW()
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE consultation_queue
+        SET queue_status = #{queueStatus},
+            <if test="assignedTime != null">assigned_time = #{assignedTime},</if>
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <sql id="queueWhere">
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR pt.type_name LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.crisisLevel != null and query.crisisLevel != ''">
+            AND cq.crisis_level = #{query.crisisLevel}
+        </if>
+        <if test="query.problemTypeId != null">
+            AND cq.problem_type_id = #{query.problemTypeId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND cq.queue_status = #{query.status}
+        </if>
+    </sql>
+
+    <select id="pageQueue" resultType="com.tyut.psychological.consultation.vo.ConsultationQueueVO">
+        SELECT
+            cq.id,
+            cq.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            cq.problem_type_id,
+            pt.type_name AS problem_type_name,
+            cq.crisis_level,
+            cq.priority_score,
+            cq.enqueue_time,
+            cq.queue_status,
+            fvr.summary,
+            fvr.next_action
+        FROM consultation_queue cq
+        LEFT JOIN sys_user su ON cq.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cq.problem_type_id = pt.id
+        LEFT JOIN first_visit_result fvr ON cq.first_visit_result_id = fvr.id
+        WHERE 1=1
+        <include refid="queueWhere"/>
+        ORDER BY cq.priority_score DESC, cq.enqueue_time ASC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countQueue" resultType="long">
+        SELECT COUNT(*)
+        FROM consultation_queue cq
+        LEFT JOIN sys_user su ON cq.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cq.problem_type_id = pt.id
+        WHERE 1=1
+        <include refid="queueWhere"/>
+    </select>
+
+    <select id="selectDetailById" resultType="com.tyut.psychological.consultation.vo.ConsultationQueueDetailVO">
+        SELECT
+            cq.id,
+            cq.student_id,
+            su.real_name AS student_name,
+            sp.student_no,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            sp.gender,
+            cq.problem_type_id,
+            pt.type_name AS problem_type_name,
+            cq.crisis_level,
+            cq.priority_score,
+            cq.queue_status,
+            cq.enqueue_time,
+            cq.first_visit_result_id,
+            fva.id AS appointment_id,
+            fva.appointment_no,
+            fvf.main_problem,
+            fvf.problem_description,
+            fvf.expected_help,
+            fvf.risk_score,
+            fvf.risk_level,
+            fvr.interview_time,
+            interviewer_su.real_name AS interviewer_name,
+            fvr.summary,
+            fvr.next_action
+        FROM consultation_queue cq
+        LEFT JOIN sys_user su ON cq.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cq.problem_type_id = pt.id
+        LEFT JOIN first_visit_result fvr ON cq.first_visit_result_id = fvr.id
+        LEFT JOIN first_visit_appointment fva ON fvr.appointment_id = fva.id
+        LEFT JOIN first_visit_form fvf ON fva.form_id = fvf.id
+        LEFT JOIN staff_profile isp ON fvr.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
+        WHERE cq.id = #{id}
+    </select>
+</mapper>
