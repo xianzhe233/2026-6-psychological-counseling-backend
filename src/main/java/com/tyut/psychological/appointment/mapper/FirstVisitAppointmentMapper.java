@@ -2,6 +2,7 @@ package com.tyut.psychological.appointment.mapper;
 
 import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.appointment.vo.AppointmentAuditVO;
+import com.tyut.psychological.appointment.vo.StudentAppointmentVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -70,4 +71,31 @@ public interface FirstVisitAppointmentMapper {
      * @return 未完成预约数量
      */
     long checkStudentUnfinishedAppointment(@Param("studentId") Long studentId, @Param("excludeId") Long excludeId);
+
+    /**
+     * 分页查询学生预约列表
+     * @param studentId 学生ID
+     * @param status 预约状态
+     * @return 学生预约列表VO
+     */
+    List<StudentAppointmentVO> pageStudentAppointments(@Param("studentId") Long studentId,
+                                                      @Param("status") String status);
+
+    /**
+     * 统计学生预约数量
+     * @param studentId 学生ID
+     * @param status 预约状态
+     * @return 预约数量
+     */
+    long countStudentAppointments(@Param("studentId") Long studentId,
+                                 @Param("status") String status);
+
+    /**
+     * 查询学生预约详情
+     * @param id 预约ID
+     * @param studentId 学生ID
+     * @return 学生预约详情VO
+     */
+    StudentAppointmentVO selectStudentAppointmentDetail(@Param("id") Long id,
+                                                       @Param("studentId") Long studentId);
 }

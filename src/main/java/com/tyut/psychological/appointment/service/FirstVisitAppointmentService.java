@@ -2,9 +2,12 @@ package com.tyut.psychological.appointment.service;
 
 import com.tyut.psychological.appointment.dto.ApproveRequest;
 import com.tyut.psychological.appointment.dto.RejectRequest;
+import com.tyut.psychological.appointment.dto.StudentAppointmentCreateRequest;
+import com.tyut.psychological.appointment.dto.StudentAppointmentCancelRequest;
 import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.appointment.mapper.FirstVisitAppointmentMapper;
 import com.tyut.psychological.appointment.vo.AppointmentAuditVO;
+import com.tyut.psychological.appointment.vo.StudentAppointmentVO;
 import com.tyut.psychological.common.api.PageResult;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.log.service.OperationLogService;
@@ -12,6 +15,9 @@ import com.tyut.psychological.common.notification.service.NotificationLogService
 import com.tyut.psychological.common.util.SessionUtils;
 import com.tyut.psychological.schedule.entity.DutySchedule;
 import com.tyut.psychological.schedule.service.DutyScheduleService;
+import com.tyut.psychological.student.entity.ConsentRecord;
+import com.tyut.psychological.student.entity.FirstVisitForm;
+import com.tyut.psychological.student.mapper.StudentFormMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,17 +36,20 @@ public class FirstVisitAppointmentService {
     private final DutyScheduleService dutyScheduleService;
     private final OperationLogService operationLogService;
     private final NotificationLogService notificationLogService;
+    private final StudentFormMapper studentFormMapper;
     private final HttpServletRequest request;
 
     public FirstVisitAppointmentService(FirstVisitAppointmentMapper appointmentMapper,
                                        DutyScheduleService dutyScheduleService,
                                        OperationLogService operationLogService,
                                        NotificationLogService notificationLogService,
+                                       StudentFormMapper studentFormMapper,
                                        HttpServletRequest request) {
         this.appointmentMapper = appointmentMapper;
         this.dutyScheduleService = dutyScheduleService;
         this.operationLogService = operationLogService;
         this.notificationLogService = notificationLogService;
+        this.studentFormMapper = studentFormMapper;
         this.request = request;
     }
 
@@ -291,6 +300,164 @@ public class FirstVisitAppointmentService {
                 roomName
             );
         }
+    }
+
+    /**
+     * 学生提交预约
+     * @param studentId 学生ID
+     * @param request 预约创建请求
+     * @return 预约信息
+     */
+    @Transactional
+    public StudentAppointmentVO createStudentAppointment(Long studentId, StudentAppointmentCreateRequest request) {
+        // 检查学生是否有未完成的预约
+        long unfinishedCount = appointmentMapper.checkStudentUnfinishedAppointment(studentId, null);
+        if (unfinishedCount > 0) {
+            throw new BusinessException(400, "您已有待审核或已通过的预约，请等待处理完成后再预约");
+        }
+        
+        // 检查首访登记表是否存在
+        FirstVisitForm form = studentFormMapper.selectById(request.getFormId());
+        if (form == null) {
+            throw new BusinessException(404, "首访登记表不存在");
+        }
+        
+        // 检查知情同意书是否已签署
+        ConsentRecord consent = studentFormMapper.selectConsentByFormId(request.getFormId());
+        if (consent == null || consent.getSigned() == null || consent.getSigned() != 1) {
+            throw new BusinessException(400, "请先签署知情同意书");
+        }
+        
+        // 检查值班安排是否存在且可用
+        DutySchedule dutySchedule = dutyScheduleService.getDutyScheduleById(request.getDutyScheduleId());
+        if (dutySchedule == null) {
+            throw new BusinessException(404, "值班安排不存在");
+        }
+        
+        // 检查容量是否足够
+        if (dutySchedule.getReservedCount() >= dutySchedule.getCapacity()) {
+            throw new BusinessException(400, "该时间段已约满");
+        }
+        
+        // 创建预约
+        FirstVisitAppointment appointment = new FirstVisitAppointment();
+        appointment.setStudentId(studentId);
+        appointment.setFormId(request.getFormId());
+        appointment.setDutyScheduleId(request.getDutyScheduleId());
+        appointment.setInterviewerId(request.getInterviewerId());
+        appointment.setAppointmentDate(request.getAppointmentDate());
+        appointment.setSlotId(request.getSlotId());
+        appointment.setRoomId(request.getRoomId());
+        appointment.setAppointmentStatus("PENDING");
+        appointment.setPriorityFlag(0);
+        
+        // 生成预约编号
+        appointment.setAppointmentNo(generateAppointmentNo());
+        
+        appointmentMapper.insert(appointment);
+        
+        // 增加值班安排的已预约数量
+        dutyScheduleService.incrementReservedCount(request.getDutyScheduleId(), 1);
+        
+        // 写操作日志
+        writeOperationLog("提交预约", "初访预约", "学生ID: " + studentId + ", 预约ID: " + appointment.getId());
+        
+        // 返回预约信息
+        return appointmentMapper.selectStudentAppointmentDetail(appointment.getId(), studentId);
+    }
+
+    /**
+     * 学生预约列表
+     * @param studentId 学生ID
+     * @param status 预约状态
+     * @param pageNum 页码
+     * @param pageSize 每页数量
+     * @return 分页结果
+     */
+    public PageResult<StudentAppointmentVO> pageStudentAppointments(Long studentId, String status, 
+                                                                   Integer pageNum, Integer pageSize) {
+        List<StudentAppointmentVO> records = appointmentMapper.pageStudentAppointments(studentId, status);
+        long total = appointmentMapper.countStudentAppointments(studentId, status);
+        // 内存分页（数据量小）
+        int from = (pageNum - 1) * pageSize;
+        int to = Math.min(from + pageSize, records.size());
+        List<StudentAppointmentVO> page = from < records.size() ? records.subList(from, to) : List.of();
+        long pages = (total + pageSize - 1) / pageSize;
+        return new PageResult<>(page, total, pageNum, pageSize, pages);
+    }
+
+    /**
+     * 学生预约详情
+     * @param id 预约ID
+     * @param studentId 学生ID
+     * @return 预约详情
+     */
+    public StudentAppointmentVO getStudentAppointmentDetail(Long id, Long studentId) {
+        StudentAppointmentVO detail = appointmentMapper.selectStudentAppointmentDetail(id, studentId);
+        if (detail == null) {
+            throw new BusinessException(404, "预约记录不存在");
+        }
+        return detail;
+    }
+
+    /**
+     * 学生取消预约
+     * @param id 预约ID
+     * @param studentId 学生ID
+     * @param request 取消请求
+     */
+    @Transactional
+    public void cancelStudentAppointment(Long id, Long studentId, StudentAppointmentCancelRequest request) {
+        FirstVisitAppointment appointment = appointmentMapper.selectById(id);
+        if (appointment == null) {
+            throw new BusinessException(404, "预约记录不存在");
+        }
+        
+        // 检查预约是否属于该学生
+        if (!appointment.getStudentId().equals(studentId)) {
+            throw new BusinessException(403, "无权操作此预约");
+        }
+        
+        // 检查预约状态是否可取消
+        if (!"PENDING".equals(appointment.getAppointmentStatus()) && 
+            !"APPROVED".equals(appointment.getAppointmentStatus())) {
+            throw new BusinessException(400, "只有待审核或已通过的预约才能取消");
+        }
+        
+        // 如果是已通过的预约，检查是否提前一天
+        if ("APPROVED".equals(appointment.getAppointmentStatus())) {
+            LocalDate today = LocalDate.now();
+            LocalDate appointmentDate = appointment.getAppointmentDate();
+            if (appointmentDate != null && !appointmentDate.isAfter(today)) {
+                throw new BusinessException(400, "已通过的预约需要至少提前一天取消");
+            }
+        }
+        
+        // 释放已占用的容量
+        if (appointment.getDutyScheduleId() != null) {
+            dutyScheduleService.decrementReservedCount(appointment.getDutyScheduleId(), 1);
+        }
+        
+        // 更新预约状态
+        appointment.setAppointmentStatus("CANCELED");
+        appointment.setCancelReason(request.getReason());
+        
+        appointmentMapper.update(appointment);
+        
+        // 写操作日志
+        writeOperationLog("取消预约", "初访预约", "学生ID: " + studentId + ", 预约ID: " + id);
+    }
+
+    /**
+     * 生成预约编号
+     * @return 预约编号
+     */
+    private String generateAppointmentNo() {
+        // 简单实现：FV + 日期 + 随机4位数字
+        LocalDate today = LocalDate.now();
+        String dateStr = today.toString().replace("-", "");
+        int random = (int) (Math.random() * 10000);
+        return String.format("FV%s%04d", dateStr, random);
     }
 
     /**

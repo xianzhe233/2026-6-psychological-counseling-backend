@@ -195,4 +195,69 @@
           </if>
     </select>
 
+    <select id="pageStudentAppointments" resultType="com.tyut.psychological.appointment.vo.StudentAppointmentVO">
+        SELECT 
+            fva.id,
+            fva.appointment_no,
+            fva.appointment_date,
+            fva.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            fva.room_id,
+            cr.room_name,
+            fva.interviewer_id,
+            interviewer_su.real_name AS interviewer_name,
+            fva.appointment_status,
+            fva.audit_remark,
+            fva.cancel_reason,
+            fva.create_time,
+            fva.update_time
+        FROM first_visit_appointment fva
+        LEFT JOIN time_slot ts ON fva.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        LEFT JOIN staff_profile isp ON fva.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
+        WHERE fva.student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND fva.appointment_status = #{status}
+        </if>
+        ORDER BY fva.create_time DESC
+    </select>
+
+    <select id="countStudentAppointments" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment fva
+        WHERE fva.student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND fva.appointment_status = #{status}
+        </if>
+    </select>
+
+    <select id="selectStudentAppointmentDetail" resultType="com.tyut.psychological.appointment.vo.StudentAppointmentVO">
+        SELECT 
+            fva.id,
+            fva.appointment_no,
+            fva.appointment_date,
+            fva.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            fva.room_id,
+            cr.room_name,
+            fva.interviewer_id,
+            interviewer_su.real_name AS interviewer_name,
+            fva.appointment_status,
+            fva.audit_remark,
+            fva.cancel_reason,
+            fva.create_time,
+            fva.update_time
+        FROM first_visit_appointment fva
+        LEFT JOIN time_slot ts ON fva.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        LEFT JOIN staff_profile isp ON fva.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
+        WHERE fva.id = #{id} AND fva.student_id = #{studentId}
+    </select>
+
 </mapper>
