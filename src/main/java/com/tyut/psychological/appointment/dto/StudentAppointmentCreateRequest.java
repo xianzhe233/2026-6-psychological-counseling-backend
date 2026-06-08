@@ -22,7 +22,6 @@ public class StudentAppointmentCreateRequest {
     @NotNull(message = "初访员ID不能为空")
     private Long interviewerId;
     
-    @NotNull(message = "咨询室ID不能为空")
     private Long roomId;
 
     // getter和setter方法

@@ -117,26 +117,34 @@ public class FirstVisitAppointmentService {
             throw new BusinessException(404, "值班安排不存在");
         }
         
-        // 校验容量是否足够
-        if (dutySchedule.getReservedCount() >= dutySchedule.getCapacity()) {
+        validateAppointmentScheduleConsistency(dutySchedule, approveRequest.getInterviewerId(), approveRequest.getAppointmentDate(), approveRequest.getSlotId(), approveRequest.getRoomId());
+
+        Long originalDutyScheduleId = appointment.getDutyScheduleId();
+        boolean sameSchedule = originalDutyScheduleId != null
+            && originalDutyScheduleId.equals(approveRequest.getDutyScheduleId());
+        if (!sameSchedule && dutySchedule.getReservedCount() >= dutySchedule.getCapacity()) {
             throw new BusinessException(400, "值班容量已满");
         }
         
         // 更新预约状态
         appointment.setAppointmentStatus("APPROVED");
         appointment.setDutyScheduleId(approveRequest.getDutyScheduleId());
-        appointment.setInterviewerId(approveRequest.getInterviewerId());
-        appointment.setAppointmentDate(approveRequest.getAppointmentDate());
-        appointment.setSlotId(approveRequest.getSlotId());
-        appointment.setRoomId(approveRequest.getRoomId());
+        appointment.setInterviewerId(dutySchedule.getStaffId());
+        appointment.setAppointmentDate(dutySchedule.getDutyDate());
+        appointment.setSlotId(dutySchedule.getSlotId());
+        appointment.setRoomId(resolveRoomId(dutySchedule, approveRequest.getRoomId()));
         appointment.setAuditAdminId(adminId);
         appointment.setAuditTime(LocalDateTime.now());
         appointment.setAuditRemark(approveRequest.getAuditRemark());
         
         appointmentMapper.update(appointment);
         
-        // 增加值班安排的已预约数量
-        dutyScheduleService.incrementReservedCount(approveRequest.getDutyScheduleId(), 1);
+        if (!sameSchedule) {
+            if (originalDutyScheduleId != null) {
+                dutyScheduleService.decrementReservedCount(originalDutyScheduleId, 1);
+            }
+            dutyScheduleService.incrementReservedCount(approveRequest.getDutyScheduleId(), 1);
+        }
         
         // 写通知日志（这里简化处理，实际应该调用通知服务）
         writeNotificationLog(appointment, "APPOINTMENT_APPROVED");
@@ -203,36 +211,39 @@ public class FirstVisitAppointmentService {
             throw new BusinessException(400, "只有待审核或已通过状态的预约才能改约");
         }
         
-        // 释放旧值班安排的容量
-        if (appointment.getDutyScheduleId() != null) {
-            dutyScheduleService.decrementReservedCount(appointment.getDutyScheduleId(), 1);
-        }
-        
+        Long originalDutyScheduleId = appointment.getDutyScheduleId();
+
         // 校验新值班安排
         DutySchedule newDutySchedule = dutyScheduleService.getDutyScheduleById(rescheduleRequest.getDutyScheduleId());
         if (newDutySchedule == null) {
             throw new BusinessException(404, "新值班安排不存在");
         }
-        
-        // 校验新容量是否足够
-        if (newDutySchedule.getReservedCount() >= newDutySchedule.getCapacity()) {
+        validateAppointmentScheduleConsistency(newDutySchedule, rescheduleRequest.getInterviewerId(), rescheduleRequest.getAppointmentDate(), rescheduleRequest.getSlotId(), rescheduleRequest.getRoomId());
+
+        boolean sameSchedule = originalDutyScheduleId != null
+            && originalDutyScheduleId.equals(rescheduleRequest.getDutyScheduleId());
+        if (!sameSchedule && newDutySchedule.getReservedCount() >= newDutySchedule.getCapacity()) {
             throw new BusinessException(400, "新值班容量已满");
         }
         
         // 更新预约信息
         appointment.setDutyScheduleId(rescheduleRequest.getDutyScheduleId());
-        appointment.setInterviewerId(rescheduleRequest.getInterviewerId());
-        appointment.setAppointmentDate(rescheduleRequest.getAppointmentDate());
-        appointment.setSlotId(rescheduleRequest.getSlotId());
-        appointment.setRoomId(rescheduleRequest.getRoomId());
+        appointment.setInterviewerId(newDutySchedule.getStaffId());
+        appointment.setAppointmentDate(newDutySchedule.getDutyDate());
+        appointment.setSlotId(newDutySchedule.getSlotId());
+        appointment.setRoomId(resolveRoomId(newDutySchedule, rescheduleRequest.getRoomId()));
         appointment.setAuditAdminId(adminId);
         appointment.setAuditTime(LocalDateTime.now());
         appointment.setAuditRemark(rescheduleRequest.getAuditRemark());
         
         appointmentMapper.update(appointment);
         
-        // 增加新值班安排的已预约数量
-        dutyScheduleService.incrementReservedCount(rescheduleRequest.getDutyScheduleId(), 1);
+        if (!sameSchedule) {
+            if (originalDutyScheduleId != null) {
+                dutyScheduleService.decrementReservedCount(originalDutyScheduleId, 1);
+            }
+            dutyScheduleService.incrementReservedCount(rescheduleRequest.getDutyScheduleId(), 1);
+        }
         
         // 写通知日志
         writeNotificationLog(appointment, "APPOINTMENT_RESCHEDULED");
@@ -283,7 +294,7 @@ public class FirstVisitAppointmentService {
             notificationLogService.logAppointmentApproved(
                 appointment.getStudentId(),
                 studentInfo.getStudentName(),
-                null, // 手机号暂时为空
+                studentInfo.getPhone(),
                 appointment.getId(),
                 appointmentDate,
                 slotName,
@@ -293,7 +304,7 @@ public class FirstVisitAppointmentService {
             notificationLogService.logAppointmentRescheduled(
                 appointment.getStudentId(),
                 studentInfo.getStudentName(),
-                null, // 手机号暂时为空
+                studentInfo.getPhone(),
                 appointment.getId(),
                 appointmentDate,
                 slotName,
@@ -316,10 +327,16 @@ public class FirstVisitAppointmentService {
             throw new BusinessException(400, "您已有待审核或已通过的预约，请等待处理完成后再预约");
         }
         
-        // 检查首访登记表是否存在
+        // 检查首访登记表是否存在且属于当前学生
         FirstVisitForm form = studentFormMapper.selectById(request.getFormId());
         if (form == null) {
             throw new BusinessException(404, "首访登记表不存在");
+        }
+        if (!studentId.equals(form.getStudentId())) {
+            throw new BusinessException(403, "无权使用该首访登记表预约");
+        }
+        if (!"SUBMITTED".equals(form.getFormStatus())) {
+            throw new BusinessException(400, "首访登记表尚未提交，无法预约");
         }
         
         // 检查知情同意书是否已签署
@@ -334,6 +351,8 @@ public class FirstVisitAppointmentService {
             throw new BusinessException(404, "值班安排不存在");
         }
         
+        validateAppointmentScheduleConsistency(dutySchedule, request.getInterviewerId(), request.getAppointmentDate(), request.getSlotId(), request.getRoomId());
+
         // 检查容量是否足够
         if (dutySchedule.getReservedCount() >= dutySchedule.getCapacity()) {
             throw new BusinessException(400, "该时间段已约满");
@@ -344,10 +363,10 @@ public class FirstVisitAppointmentService {
         appointment.setStudentId(studentId);
         appointment.setFormId(request.getFormId());
         appointment.setDutyScheduleId(request.getDutyScheduleId());
-        appointment.setInterviewerId(request.getInterviewerId());
-        appointment.setAppointmentDate(request.getAppointmentDate());
-        appointment.setSlotId(request.getSlotId());
-        appointment.setRoomId(request.getRoomId());
+        appointment.setInterviewerId(dutySchedule.getStaffId());
+        appointment.setAppointmentDate(dutySchedule.getDutyDate());
+        appointment.setSlotId(dutySchedule.getSlotId());
+        appointment.setRoomId(resolveRoomId(dutySchedule, request.getRoomId()));
         appointment.setAppointmentStatus("PENDING");
         appointment.setPriorityFlag(0);
         
@@ -452,6 +471,32 @@ public class FirstVisitAppointmentService {
      * 生成预约编号
      * @return 预约编号
      */
+    private void validateAppointmentScheduleConsistency(DutySchedule dutySchedule, Long interviewerId,
+                                                       LocalDate appointmentDate, Long slotId, Long roomId) {
+        if (!"INTERVIEWER".equals(dutySchedule.getStaffType())) {
+            throw new BusinessException(400, "所选值班安排不是初访员值班");
+        }
+        if (dutySchedule.getStatus() == null || dutySchedule.getStatus() != 1) {
+            throw new BusinessException(400, "所选值班安排未启用");
+        }
+        if (interviewerId != null && !dutySchedule.getStaffId().equals(interviewerId)) {
+            throw new BusinessException(400, "初访员信息与值班安排不一致");
+        }
+        if (appointmentDate != null && !dutySchedule.getDutyDate().equals(appointmentDate)) {
+            throw new BusinessException(400, "预约日期与值班安排不一致");
+        }
+        if (slotId != null && !dutySchedule.getSlotId().equals(slotId)) {
+            throw new BusinessException(400, "时间段与值班安排不一致");
+        }
+        if (roomId != null && dutySchedule.getRoomId() != null && !dutySchedule.getRoomId().equals(roomId)) {
+            throw new BusinessException(400, "咨询室与值班安排不一致");
+        }
+    }
+
+    private Long resolveRoomId(DutySchedule dutySchedule, Long roomId) {
+        return roomId != null ? roomId : dutySchedule.getRoomId();
+    }
+
     private String generateAppointmentNo() {
         // 简单实现：FV + 日期 + 随机4位数字
         LocalDate today = LocalDate.now();

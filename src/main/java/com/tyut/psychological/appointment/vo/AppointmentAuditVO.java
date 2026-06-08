@@ -17,11 +17,18 @@ public class AppointmentAuditVO {
     private String studentName;
     private String studentNo;
     private String college;
+    private String phone;
     
     // 首访登记信息
     private Long formId;
     private String mainProblem;
     private String problemDescription;
+    private String expectedHelp;
+    private Integer moodScore;
+    private Integer sleepScore;
+    private Integer stressScore;
+    private Integer selfHarmFlag;
+    private Integer emergencyFlag;
     private Integer riskScore;
     private String riskLevel;
     
@@ -73,6 +80,9 @@ public class AppointmentAuditVO {
     public String getCollege() { return college; }
     public void setCollege(String college) { this.college = college; }
     
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    
     public Long getFormId() { return formId; }
     public void setFormId(Long formId) { this.formId = formId; }
     
@@ -81,6 +91,24 @@ public class AppointmentAuditVO {
     
     public String getProblemDescription() { return problemDescription; }
     public void setProblemDescription(String problemDescription) { this.problemDescription = problemDescription; }
+    
+    public String getExpectedHelp() { return expectedHelp; }
+    public void setExpectedHelp(String expectedHelp) { this.expectedHelp = expectedHelp; }
+    
+    public Integer getMoodScore() { return moodScore; }
+    public void setMoodScore(Integer moodScore) { this.moodScore = moodScore; }
+    
+    public Integer getSleepScore() { return sleepScore; }
+    public void setSleepScore(Integer sleepScore) { this.sleepScore = sleepScore; }
+    
+    public Integer getStressScore() { return stressScore; }
+    public void setStressScore(Integer stressScore) { this.stressScore = stressScore; }
+    
+    public Integer getSelfHarmFlag() { return selfHarmFlag; }
+    public void setSelfHarmFlag(Integer selfHarmFlag) { this.selfHarmFlag = selfHarmFlag; }
+    
+    public Integer getEmergencyFlag() { return emergencyFlag; }
+    public void setEmergencyFlag(Integer emergencyFlag) { this.emergencyFlag = emergencyFlag; }
     
     public Integer getRiskScore() { return riskScore; }
     public void setRiskScore(Integer riskScore) { this.riskScore = riskScore; }
