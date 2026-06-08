@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.student.mapper.StudentAppointmentMapper">
+
+    <select id="selectOwnedSubmittedForm" resultType="com.tyut.psychological.student.entity.FirstVisitForm">
+        SELECT *
+        FROM first_visit_form
+        WHERE id = #{formId}
+          AND student_id = #{studentId}
+          AND form_status = 'SUBMITTED'
+    </select>
+
+    <select id="selectSignedConsent" resultType="com.tyut.psychological.student.entity.ConsentRecord">
+        SELECT *
+        FROM consent_record
+        WHERE form_id = #{formId}
+          AND student_id = #{studentId}
+          AND signed = 1
+        LIMIT 1
+    </select>
+
+    <select id="selectAvailableSlots" resultType="com.tyut.psychological.student.vo.AvailableSlotVO">
+        SELECT
+            ds.id AS duty_schedule_id,
+            ds.staff_id AS interviewer_id,
+            su.real_name AS interviewer_name,
+            ds.duty_date AS appointment_date,
+            ds.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            ds.room_id,
+            cr.room_name,
+            ds.capacity,
+            ds.reserved_count,
+            (ds.capacity - ds.reserved_count) AS remaining,
+            CASE
+                WHEN ds.status = 1
+                 AND sp.status = 1
+                 AND ds.staff_type = 'INTERVIEWER'
+                 AND ds.capacity &gt; ds.reserved_count
+                THEN TRUE
+                ELSE FALSE
+            END AS available,
+            CASE
+                WHEN ds.status != 1 THEN '该时间段已停用'
+                WHEN sp.status != 1 THEN '初访员当前不可预约'
+                WHEN ds.staff_type != 'INTERVIEWER' THEN '当前不是初访排班'
+                WHEN ds.capacity &lt;= ds.reserved_count THEN '该时间段已约满'
+                ELSE NULL
+            END AS disabled_reason
+        FROM duty_schedule ds
+        LEFT JOIN staff_profile sp ON ds.staff_id = sp.id
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        LEFT JOIN time_slot ts ON ds.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON ds.room_id = cr.id
+        WHERE ds.duty_date = #{date}
+          AND ds.staff_type = 'INTERVIEWER'
+          <if test="interviewerId != null">
+              AND ds.staff_id = #{interviewerId}
+          </if>
+        ORDER BY ts.start_time ASC, ds.id ASC
+    </select>
+
+    <select id="countAppointmentsByDate" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment
+        WHERE appointment_date = #{date}
+    </select>
+</mapper>
