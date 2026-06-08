@@ -375,7 +375,7 @@
 - `./mvnw test`
 - `./mvnw package -DskipTests`
 - `java -jar target/psychological-counseling-backend-0.0.1-SNAPSHOT.jar`
-- `curl http://127.0.0.1:8080/api/health`
+- `curl http://127.0.0.1:24681/api/health`
 - `curl POST /api/auth/login`
 
 ### 遗留问题
