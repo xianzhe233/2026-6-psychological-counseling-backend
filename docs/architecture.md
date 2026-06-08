@@ -537,7 +537,7 @@ else LOW
 
 ```yaml
 server:
-  port: 8080
+  port: 24681
   servlet:
     session:
       timeout: 2h
