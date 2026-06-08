@@ -423,6 +423,32 @@
 - 前端仍使用 mock，阶段七联调时再切换真实接口
 - 初访结果入队（`enqueue`）仍依赖 ltb 初访员接口，当前靠演示数据支撑
 
+## 2026-06-08 qxz review 修复：咨询安排模块
+
+### 完成内容
+
+- review 刚合入的咨询队列/咨询安排代码后，修复分页 SQL 中直接拼接 `OFFSET` 的写法，改为参数化 offset，避免注入与分页边界问题。
+- 补强心理助理身份校验：除“存在且启用”外，进一步要求 `staffType=ASSISTANT`，避免其他工作人员越权安排或取消咨询。
+- 为咨询安排服务补充单元测试，覆盖“非助理账号不可安排咨询”和“助理校验通过后继续做时间段存在性校验”两类场景。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/consultation/dto/ConsultationQueueQuery.java`
+- `src/main/java/com/tyut/psychological/consultation/dto/ScheduleQuery.java`
+- `src/main/java/com/tyut/psychological/consultation/service/ConsultationScheduleService.java`
+- `src/main/resources/mapper/consultation/ConsultationQueueMapper.xml`
+- `src/main/resources/mapper/consultation/ConsultationScheduleMapper.xml`
+- `src/test/java/com/tyut/psychological/consultation/service/ConsultationScheduleServiceTest.java`
+- `docs/progress.md`
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- `GET /api/assistant/counselors/available-slots` 当前只按单日 `startDate` 查询；若后续前端需要“从起始日向后看多日可约时间”，需再扩展接口语义与实现。
+
 ---
 
 每完成一个模块，应追加记录：

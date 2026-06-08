@@ -65,7 +65,7 @@
         WHERE 1=1
         <include refid="queueWhere"/>
         ORDER BY cq.priority_score DESC, cq.enqueue_time ASC
-        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>
 
     <select id="countQueue" resultType="long">

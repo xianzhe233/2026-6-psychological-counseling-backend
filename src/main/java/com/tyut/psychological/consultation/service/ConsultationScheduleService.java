@@ -112,10 +112,7 @@ public class ConsultationScheduleService {
         }
 
         StaffProfile counselor = validateCounselor(request.getCounselorId());
-        StaffProfile assistant = staffProfileMapper.selectByUserId(assistantUserId);
-        if (assistant == null || assistant.getStatus() != 1) {
-            throw new BusinessException(400, "心理助理信息无效");
-        }
+        StaffProfile assistant = requireAssistant(assistantUserId);
 
         CounselingRoom room = counselingRoomMapper.selectById(request.getRoomId());
         if (room == null || room.getStatus() != 1) {
@@ -206,10 +203,7 @@ public class ConsultationScheduleService {
             throw new BusinessException(400, "只有已预约状态的安排才能取消");
         }
 
-        StaffProfile assistant = staffProfileMapper.selectByUserId(assistantUserId);
-        if (assistant == null) {
-            throw new BusinessException(400, "心理助理信息无效");
-        }
+        requireAssistant(assistantUserId);
 
         consultationScheduleMapper.updateStatus(scheduleId, ScheduleStatus.CANCELED.name());
         if (schedule.getQueueId() != null) {
@@ -234,6 +228,17 @@ public class ConsultationScheduleService {
 
         operationLogService.logSuccess("咨询安排", "取消咨询安排",
                 "安排ID: " + scheduleId + "，原因: " + reason);
+    }
+
+    private StaffProfile requireAssistant(Long assistantUserId) {
+        StaffProfile assistant = staffProfileMapper.selectByUserId(assistantUserId);
+        if (assistant == null || assistant.getStatus() != 1) {
+            throw new BusinessException(400, "心理助理信息无效");
+        }
+        if (!"ASSISTANT".equals(assistant.getStaffType())) {
+            throw new BusinessException(403, "当前人员无权执行心理助理操作");
+        }
+        return assistant;
     }
 
     private StaffProfile validateCounselor(Long counselorId) {
