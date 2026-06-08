@@ -85,7 +85,28 @@ INSERT INTO system_config(config_key, config_value, description, create_time) VA
 ('risk.high.threshold', '40', '高风险阈值', NOW()),
 ('risk.urgent.threshold', '70', '紧急风险阈值', NOW());
 
--- 14. 咨询师值班（staff_profile 咨询师 id=4）
+-- 14. 初访员值班（staff_profile 初访员 id=2）
+INSERT INTO duty_schedule(staff_id, staff_type, duty_date, slot_id, room_id, capacity, reserved_count, status, create_time) VALUES
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 1, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 3, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 4, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 5, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 1 DAY), 6, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 1, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 3, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 4, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 5, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 2 DAY), 6, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 1, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 3, 1, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 4, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 5, 2, 3, 0, 1, NOW()),
+(2, 'INTERVIEWER', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 6, 2, 3, 0, 1, NOW());
+
+-- 15. 咨询师值班（staff_profile 咨询师 id=4）
 INSERT INTO duty_schedule(staff_id, staff_type, duty_date, slot_id, room_id, capacity, reserved_count, status, create_time) VALUES
 (4, 'COUNSELOR', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 1, 1, 2, 0, 1, NOW()),
 (4, 'COUNSELOR', DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2, 1, 2, 0, 1, NOW()),

@@ -67,4 +67,72 @@
         FROM first_visit_appointment
         WHERE appointment_date = #{date}
     </select>
+
+    <select id="selectStudentAppointments" resultType="com.tyut.psychological.student.vo.MyAppointmentVO">
+        SELECT
+            fva.id,
+            fva.appointment_no,
+            fva.form_id,
+            fva.interviewer_id,
+            su.real_name AS interviewer_name,
+            fva.appointment_date,
+            fva.slot_id,
+            ts.slot_name,
+            ts.start_time,
+            ts.end_time,
+            fva.room_id,
+            cr.room_name,
+            fva.appointment_status,
+            fva.priority_flag,
+            fva.audit_remark,
+            fva.cancel_reason,
+            fva.create_time,
+            fva.update_time
+        FROM first_visit_appointment fva
+        LEFT JOIN staff_profile sp ON fva.interviewer_id = sp.id
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        LEFT JOIN time_slot ts ON fva.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        WHERE fva.student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND fva.appointment_status = #{status}
+        </if>
+        ORDER BY fva.create_time DESC
+    </select>
+
+    <select id="countStudentAppointments" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment
+        WHERE student_id = #{studentId}
+        <if test="status != null and status != ''">
+            AND appointment_status = #{status}
+        </if>
+    </select>
+
+    <select id="selectStudentNotifications" resultType="com.tyut.psychological.student.vo.MyNotificationVO">
+        SELECT
+            id,
+            notify_type,
+            title,
+            content,
+            send_status,
+            send_time,
+            related_id,
+            create_time
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+        <if test="notifyType != null and notifyType != ''">
+            AND notify_type = #{notifyType}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="countStudentNotifications" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+        <if test="notifyType != null and notifyType != ''">
+            AND notify_type = #{notifyType}
+        </if>
+    </select>
 </mapper>

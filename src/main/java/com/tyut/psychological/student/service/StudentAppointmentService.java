@@ -3,8 +3,10 @@ package com.tyut.psychological.student.service;
 import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.appointment.mapper.FirstVisitAppointmentMapper;
 import com.tyut.psychological.auth.vo.CurrentUserVO;
+import com.tyut.psychological.common.api.PageResult;
 import com.tyut.psychological.common.enums.RoleCode;
 import com.tyut.psychological.common.exception.BusinessException;
+import com.tyut.psychological.common.notification.service.NotificationLogService;
 import com.tyut.psychological.schedule.entity.DutySchedule;
 import com.tyut.psychological.schedule.entity.TimeSlot;
 import com.tyut.psychological.schedule.mapper.TimeSlotMapper;
@@ -14,10 +16,13 @@ import com.tyut.psychological.student.entity.ConsentRecord;
 import com.tyut.psychological.student.entity.FirstVisitForm;
 import com.tyut.psychological.student.mapper.StudentAppointmentMapper;
 import com.tyut.psychological.student.vo.AvailableSlotVO;
+import com.tyut.psychological.student.vo.MyAppointmentVO;
+import com.tyut.psychological.student.vo.MyNotificationVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -29,15 +34,18 @@ public class StudentAppointmentService {
     private final FirstVisitAppointmentMapper firstVisitAppointmentMapper;
     private final DutyScheduleService dutyScheduleService;
     private final TimeSlotMapper timeSlotMapper;
+    private final NotificationLogService notificationLogService;
 
     public StudentAppointmentService(StudentAppointmentMapper studentAppointmentMapper,
                                      FirstVisitAppointmentMapper firstVisitAppointmentMapper,
                                      DutyScheduleService dutyScheduleService,
-                                     TimeSlotMapper timeSlotMapper) {
+                                     TimeSlotMapper timeSlotMapper,
+                                     NotificationLogService notificationLogService) {
         this.studentAppointmentMapper = studentAppointmentMapper;
         this.firstVisitAppointmentMapper = firstVisitAppointmentMapper;
         this.dutyScheduleService = dutyScheduleService;
         this.timeSlotMapper = timeSlotMapper;
+        this.notificationLogService = notificationLogService;
     }
 
     public List<AvailableSlotVO> getAvailableSlots(CurrentUserVO user, LocalDate date, Long interviewerId) {
@@ -123,6 +131,97 @@ public class StudentAppointmentService {
         result.put("appointmentNo", appointment.getAppointmentNo());
         result.put("appointmentStatus", appointment.getAppointmentStatus());
         return result;
+    }
+
+    /**
+     * 查询学生预约列表
+     */
+    public PageResult<MyAppointmentVO> getMyAppointments(CurrentUserVO user, String status, Integer pageNum, Integer pageSize) {
+        requireStudent(user);
+        Long studentId = user.getId();
+
+        List<MyAppointmentVO> records = studentAppointmentMapper.selectStudentAppointments(studentId, status);
+        long total = studentAppointmentMapper.countStudentAppointments(studentId, status);
+
+        // 内存分页
+        int from = (pageNum - 1) * pageSize;
+        int to = Math.min(from + pageSize, records.size());
+        List<MyAppointmentVO> page = from < records.size() ? records.subList(from, to) : List.of();
+        long pages = (total + pageSize - 1) / pageSize;
+
+        return new PageResult<>(page, total, pageNum, pageSize, pages);
+    }
+
+    /**
+     * 撤销预约
+     */
+    @Transactional
+    public void cancelAppointment(CurrentUserVO user, Long appointmentId, String reason) {
+        requireStudent(user);
+        Long studentId = user.getId();
+
+        FirstVisitAppointment appointment = firstVisitAppointmentMapper.selectById(appointmentId);
+        if (appointment == null) {
+            throw new BusinessException(404, "预约记录不存在");
+        }
+        if (!appointment.getStudentId().equals(studentId)) {
+            throw new BusinessException(403, "无权操作此预约");
+        }
+
+        String status = appointment.getAppointmentStatus();
+        if ("CANCELED".equals(status)) {
+            throw new BusinessException(400, "预约已撤销");
+        }
+        if ("COMPLETED".equals(status)) {
+            throw new BusinessException(400, "预约已完成，无法撤销");
+        }
+        if ("REJECTED".equals(status)) {
+            throw new BusinessException(400, "预约已被驳回，无法撤销");
+        }
+
+        // PENDING状态可直接撤销
+        // APPROVED状态需至少提前一天
+        if ("APPROVED".equals(status)) {
+            if (appointment.getAppointmentDate() == null) {
+                throw new BusinessException(400, "预约日期异常");
+            }
+            LocalDate today = LocalDate.now();
+            LocalDate appointmentDate = appointment.getAppointmentDate();
+            if (!appointmentDate.isAfter(today)) {
+                throw new BusinessException(400, "已通过的预约只能在预约日期前一天撤销");
+            }
+        }
+
+        // 更新预约状态
+        FirstVisitAppointment update = new FirstVisitAppointment();
+        update.setId(appointmentId);
+        update.setAppointmentStatus("CANCELED");
+        update.setCancelReason(reason);
+        firstVisitAppointmentMapper.update(update);
+
+        // 释放值班容量
+        if (appointment.getDutyScheduleId() != null) {
+            dutyScheduleService.decrementReservedCount(appointment.getDutyScheduleId(), 1);
+        }
+    }
+
+    /**
+     * 查询学生通知列表
+     */
+    public PageResult<MyNotificationVO> getMyNotifications(CurrentUserVO user, String notifyType, Integer pageNum, Integer pageSize) {
+        requireStudent(user);
+        Long studentId = user.getId();
+
+        List<MyNotificationVO> records = studentAppointmentMapper.selectStudentNotifications(studentId, notifyType);
+        long total = studentAppointmentMapper.countStudentNotifications(studentId, notifyType);
+
+        // 内存分页
+        int from = (pageNum - 1) * pageSize;
+        int to = Math.min(from + pageSize, records.size());
+        List<MyNotificationVO> page = from < records.size() ? records.subList(from, to) : List.of();
+        long pages = (total + pageSize - 1) / pageSize;
+
+        return new PageResult<>(page, total, pageNum, pageSize, pages);
     }
 
     private void requireStudent(CurrentUserVO user) {
