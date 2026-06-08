@@ -19,7 +19,6 @@ public class ApproveRequest {
     @NotNull(message = "时间段ID不能为空")
     private Long slotId;
     
-    @NotNull(message = "咨询室ID不能为空")
     private Long roomId;
     
     private String auditRemark;
