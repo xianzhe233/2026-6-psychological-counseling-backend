@@ -233,10 +233,10 @@
 - [x] 风险评分服务。
 - [x] 知情同意状态查询。
 - [x] 知情同意签署。
-- [ ] 初访预约提交。
-- [ ] 我的预约分页。
-- [ ] 学生撤销预约。
-- [ ] 学生通知查询.
+- [x] 初访预约提交。
+- [x] 我的预约分页。
+- [x] 学生撤销预约。
+- [x] 学生通知查询.
 
 ### 阶段六：管理员审核
 
@@ -448,6 +448,51 @@
 ### 遗留问题
 
 - `GET /api/assistant/counselors/available-slots` 当前只按单日 `startDate` 查询；若后续前端需要“从起始日向后看多日可约时间”，需再扩展接口语义与实现。
+
+---
+
+## 2026-06-08 阶段五：学生首访预约接口
+
+### 完成内容
+
+- 实现学生预约列表查询接口 `GET /api/student/appointments`，支持按状态筛选和分页。
+- 实现学生撤销预约接口 `POST /api/student/appointments/{id}/cancel`，支持 PENDING 状态直接撤销和 APPROVED 状态提前一天撤销规则。
+- 实现学生通知查询接口 `GET /api/student/notifications`，支持按通知类型筛选和分页。
+- 新增 `MyAppointmentVO` 和 `MyNotificationVO` 用于返回学生预约和通知数据。
+- 新增 `AppointmentCancelRequest` DTO 用于撤销预约请求参数校验。
+- 在 `StudentAppointmentMapper` 中新增查询学生预约列表、统计学生预约数量、查询学生通知列表、统计学生通知数量的方法。
+- 在 `StudentAppointmentMapper.xml` 中新增对应的 SQL 实现，支持多表联查和动态条件筛选。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/student/controller/StudentAppointmentController.java`
+- `src/main/java/com/tyut/psychological/student/service/StudentAppointmentService.java`
+- `src/main/java/com/tyut/psychological/student/mapper/StudentAppointmentMapper.java`
+- `src/main/java/com/tyut/psychological/student/vo/MyAppointmentVO.java`
+- `src/main/java/com/tyut/psychological/student/vo/MyNotificationVO.java`
+- `src/main/java/com/tyut/psychological/student/dto/AppointmentCancelRequest.java`
+- `src/main/resources/mapper/student/StudentAppointmentMapper.xml`
+
+### 接口变化
+
+- 新增 `GET /api/student/appointments?pageNum=1&pageSize=10&status=PENDING` 学生预约列表
+- 新增 `POST /api/student/appointments/{id}/cancel` 学生撤销预约
+- 新增 `GET /api/student/notifications?pageNum=1&pageSize=10&notifyType=APPOINTMENT_APPROVED` 学生通知列表
+
+### 数据库变化
+
+- 无新增表，使用现有 `first_visit_appointment` 和 `notification_log` 表
+
+### 验证方式
+
+- `./mvnw compile -DskipTests`
+- 使用学生账号 `student/123456` 调用上述接口
+- 测试预约列表查询、撤销预约、通知列表查询功能
+
+### 遗留问题
+
+- 前端仍使用 mock，需等待前端联调时切换真实接口
+- 撤销预约后通知日志未记录，后续可扩展
 
 ---
 
