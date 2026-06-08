@@ -114,10 +114,9 @@
 
     <update id="decrementReservedCount">
         UPDATE duty_schedule
-        SET reserved_count = reserved_count - #{count},
+        SET reserved_count = GREATEST(reserved_count - #{count}, 0),
             update_time = NOW()
         WHERE id = #{id}
-          AND reserved_count - #{count} >= 0
     </update>
 
 </mapper>

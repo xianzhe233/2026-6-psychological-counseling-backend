@@ -1,7 +1,11 @@
 package com.tyut.psychological.common.notification.mapper;
 
 import com.tyut.psychological.common.notification.entity.NotificationLog;
+import com.tyut.psychological.common.notification.vo.StudentNotificationVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 通知日志Mapper接口
@@ -15,4 +19,18 @@ public interface NotificationLogMapper {
      * @return 影响行数
      */
     int insert(NotificationLog notificationLog);
+
+    /**
+     * 查询学生通知列表
+     * @param studentId 学生ID
+     * @return 学生通知列表
+     */
+    List<StudentNotificationVO> selectByStudentId(@Param("studentId") Long studentId);
+
+    /**
+     * 统计学生通知数量
+     * @param studentId 学生ID
+     * @return 通知数量
+     */
+    long countByStudentId(@Param("studentId") Long studentId);
 }

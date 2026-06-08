@@ -1,5 +1,6 @@
 package com.tyut.psychological.schedule.service;
 
+import com.tyut.psychological.appointment.vo.AvailableSlotVO;
 import com.tyut.psychological.common.api.PageResult;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.log.service.OperationLogService;
@@ -198,9 +199,9 @@ public class DutyScheduleService {
             throw new BusinessException(404, "值班安排不存在");
         }
         
-        // 确保不会减到负数
-        if (dutySchedule.getReservedCount() - count < 0) {
-            throw new BusinessException(400, "已预约数量不能为负数");
+        // 如果已经是0，直接返回
+        if (dutySchedule.getReservedCount() <= 0) {
+            return;
         }
         
         dutyScheduleMapper.decrementReservedCount(id, count);
@@ -276,5 +277,44 @@ public class DutyScheduleService {
             "创建数量: " + createdCount + ", 跳过数量: " + skippedCount);
         
         return response;
+    }
+
+    /**
+     * 查询可预约时间段
+     * @param date 日期
+     * @param interviewerId 初访员ID（可选）
+     * @return 可预约时间段列表
+     */
+    public List<AvailableSlotVO> getAvailableSlots(LocalDate date, Long interviewerId) {
+        List<DutyScheduleVO> dutySchedules = dutyScheduleMapper.pageDutySchedules(
+            "INTERVIEWER", interviewerId, date, date, 1); // 状态为启用
+        
+        List<AvailableSlotVO> availableSlots = new ArrayList<>();
+        
+        for (DutyScheduleVO dutySchedule : dutySchedules) {
+            AvailableSlotVO slot = new AvailableSlotVO();
+            slot.setDutyScheduleId(dutySchedule.getId());
+            slot.setInterviewerId(dutySchedule.getStaffId());
+            slot.setInterviewerName(dutySchedule.getStaffName());
+            slot.setAppointmentDate(dutySchedule.getDutyDate());
+            slot.setSlotId(dutySchedule.getSlotId());
+            slot.setSlotName(dutySchedule.getSlotName());
+            slot.setStartTime(dutySchedule.getStartTime());
+            slot.setEndTime(dutySchedule.getEndTime());
+            slot.setRoomId(dutySchedule.getRoomId());
+            slot.setRoomName(dutySchedule.getRoomName());
+            slot.setCapacity(dutySchedule.getCapacity());
+            slot.setReservedCount(dutySchedule.getReservedCount());
+            slot.setRemaining(dutySchedule.getCapacity() - dutySchedule.getReservedCount());
+            
+            // 判断是否可用
+            boolean available = dutySchedule.getReservedCount() < dutySchedule.getCapacity();
+            slot.setAvailable(available);
+            slot.setDisabledReason(available ? null : "该时间段已约满");
+            
+            availableSlots.add(slot);
+        }
+        
+        return availableSlots;
     }
 }

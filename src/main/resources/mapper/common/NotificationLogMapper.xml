@@ -12,4 +12,23 @@
         )
     </insert>
 
+    <select id="selectByStudentId" resultType="com.tyut.psychological.common.notification.vo.StudentNotificationVO">
+        SELECT 
+            id,
+            title,
+            content,
+            notify_type,
+            send_time,
+            0 AS read_status
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+        ORDER BY send_time DESC
+    </select>
+
+    <select id="countByStudentId" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+    </select>
+
 </mapper>
