@@ -2,7 +2,7 @@ package com.tyut.psychological.student.service;
 
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.student.dto.AppointmentCreateRequest;
-import com.tyut.psychological.student.entity.FirstVisitAppointment;
+import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.student.mapper.StudentAppointmentMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

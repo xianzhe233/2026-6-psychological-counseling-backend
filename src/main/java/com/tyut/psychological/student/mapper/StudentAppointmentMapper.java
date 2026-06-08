@@ -1,6 +1,6 @@
 package com.tyut.psychological.student.mapper;
 
-import com.tyut.psychological.student.entity.FirstVisitAppointment;
+import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
