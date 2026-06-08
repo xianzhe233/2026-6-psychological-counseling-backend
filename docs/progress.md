@@ -496,6 +496,32 @@
 
 ---
 
+## 2026-06-08 review 修正 lcw 阶段5 接口整合冲突
+
+### 完成内容
+
+- 在 `dev-qxz` 上复核 lcw 学生预约/通知接口合入结果，并处理与既有代码的整合冲突。
+- 停用旧 `appointment` 包下重复暴露的学生预约控制器，消除同名 Bean 冲突。
+- 停用旧通知控制器，消除 `/api/student/notifications` 的重复路由映射，保留支持 `notifyType` 筛选的新实现。
+- 复跑 Spring Boot 测试，确认应用上下文可正常启动，学生预约/通知接口不再阻塞集成。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/appointment/controller/StudentAppointmentController.java`
+- `src/main/java/com/tyut/psychological/common/notification/controller/StudentNotificationController.java`
+- `docs/progress.md`
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- 当前学生预约与通知查询仍使用内存分页；若后续演示数据增多，建议改为 SQL 分页。
+- 历史模块中仍保留部分旧服务/DTO/VO 代码，当前已不对外暴露，后续如继续重构可再统一收敛。
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text
