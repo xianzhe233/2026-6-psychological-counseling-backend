@@ -20,4 +20,10 @@ public class ConsultationQueueQuery {
     public void setPageNum(Integer pageNum) { this.pageNum = pageNum; }
     public Integer getPageSize() { return pageSize; }
     public void setPageSize(Integer pageSize) { this.pageSize = pageSize; }
+
+    public int getOffset() {
+        int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
+        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        return (safePageNum - 1) * safePageSize;
+    }
 }
