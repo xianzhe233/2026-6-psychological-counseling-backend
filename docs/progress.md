@@ -522,6 +522,58 @@
 
 ---
 
+## 2026-06-09 阶段六：后端初访员接口
+
+### 完成内容
+
+- 实现初访员任务分页接口 `GET /api/interviewer/tasks`，支持按日期范围、状态、风险等级筛选。
+- 实现初访任务详情接口 `GET /api/interviewer/tasks/{appointmentId}`，包含学生信息、登记表摘要、预约信息。
+- 实现初访结果提交接口 `POST /api/interviewer/tasks/{appointmentId}/result`，支持完整的业务规则校验。
+- 实现业务规则校验：预约状态必须为 APPROVED、初访员归属校验、转介送诊时后续建议必填。
+- 实现咨询队列创建逻辑：当初访结论为 ARRANGE_CONSULTATION 时自动创建咨询队列，并根据危机等级和优先标记计算优先级分数。
+- 实现操作日志记录：提交初访结果时记录操作日志。
+- 新增 `FirstVisitResult` 实体类、`FirstVisitResultMapper` 接口和 XML 映射文件。
+- 新增 `InterviewerController` 控制器，提供初访员相关接口。
+- 新增 `InterviewerService` 服务类，实现完整的业务逻辑。
+- 新增 `InterviewResultRequest` DTO 用于初访结果提交请求参数校验。
+- 新增 `InterviewTaskVO` 和 `InterviewTaskDetailVO` 用于返回初访任务数据。
+- 更新 `FirstVisitAppointmentMapper` 接口和 XML，添加初访任务相关的查询方法。
+- 创建单元测试 `InterviewerServiceTest`，验证业务规则校验和核心功能。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/interviewer/**`（新增）
+- `src/main/java/com/tyut/psychological/appointment/mapper/FirstVisitAppointmentMapper.java`（更新）
+- `src/main/resources/mapper/appointment/FirstVisitAppointmentMapper.xml`（更新）
+- `src/main/resources/mapper/interviewer/FirstVisitResultMapper.xml`（新增）
+- `src/test/java/com/tyut/psychological/interviewer/service/InterviewerServiceTest.java`（新增）
+- `docs/progress.md`（更新）
+
+### 接口变化
+
+- 新增 `GET /api/interviewer/tasks` 初访员任务分页列表
+- 新增 `GET /api/interviewer/tasks/{appointmentId}` 初访任务详情
+- 新增 `POST /api/interviewer/tasks/{appointmentId}/result` 提交初访结果
+
+### 数据库变化
+
+- 无新增表，使用现有 `first_visit_result` 和 `consultation_queue` 表
+
+### 验证方式
+
+- `./mvnw test -Dtest=InterviewerServiceTest`
+- `./mvnw compile -DskipTests`
+- 使用初访员账号 `interviewer/123456` 调用上述接口
+- 测试初访任务列表查询、任务详情查看、初访结果提交功能
+
+### 遗留问题
+
+- 前端仍使用 mock，需等待前端联调时切换真实接口
+- 初访结果提交后通知日志未记录，后续可扩展
+- 初访结果编辑功能未实现，当前只能提交一次，后续可根据需求扩展
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text

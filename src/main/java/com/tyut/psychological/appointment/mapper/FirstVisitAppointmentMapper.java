@@ -3,6 +3,8 @@ package com.tyut.psychological.appointment.mapper;
 import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.appointment.vo.AppointmentAuditVO;
 import com.tyut.psychological.appointment.vo.StudentAppointmentVO;
+import com.tyut.psychological.interviewer.vo.InterviewTaskDetailVO;
+import com.tyut.psychological.interviewer.vo.InterviewTaskVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -98,4 +100,45 @@ public interface FirstVisitAppointmentMapper {
      */
     StudentAppointmentVO selectStudentAppointmentDetail(@Param("id") Long id,
                                                        @Param("studentId") Long studentId);
+    
+    /**
+     * 分页查询初访任务列表
+     * 只能查看分配给当前初访员的任务
+     * @param interviewerId 初访员staff_profile ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param status 预约状态
+     * @param riskLevel 风险等级
+     * @return 初访任务列表VO
+     */
+    List<InterviewTaskVO> pageInterviewTasks(@Param("interviewerId") Long interviewerId,
+                                            @Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate,
+                                            @Param("status") String status,
+                                            @Param("riskLevel") String riskLevel);
+    
+    /**
+     * 统计初访任务数量
+     * @param interviewerId 初访员staff_profile ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @param status 预约状态
+     * @param riskLevel 风险等级
+     * @return 任务数量
+     */
+    long countInterviewTasks(@Param("interviewerId") Long interviewerId,
+                            @Param("startDate") LocalDate startDate,
+                            @Param("endDate") LocalDate endDate,
+                            @Param("status") String status,
+                            @Param("riskLevel") String riskLevel);
+    
+    /**
+     * 查询初访任务详情
+     * 包含学生信息、预约信息
+     * @param appointmentId 预约ID
+     * @param interviewerId 初访员staff_profile ID
+     * @return 任务详情VO
+     */
+    InterviewTaskDetailVO selectInterviewTaskDetail(@Param("appointmentId") Long appointmentId,
+                                                   @Param("interviewerId") Long interviewerId);
 }
