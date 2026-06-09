@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.report.mapper.CaseReportMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.report.entity.CaseReport">
+        SELECT * FROM case_report WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO case_report (
+            student_id, counselor_id, problem_type_id, total_sessions,
+            effect_self_rating, case_summary, counseling_effect, suggestion,
+            close_type, report_status, create_time
+        ) VALUES (
+            #{studentId}, #{counselorId}, #{problemTypeId}, #{totalSessions},
+            #{effectSelfRating}, #{caseSummary}, #{counselingEffect}, #{suggestion},
+            #{closeType}, #{reportStatus}, NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE case_report
+        SET problem_type_id = #{problemTypeId},
+            total_sessions = #{totalSessions},
+            effect_self_rating = #{effectSelfRating},
+            case_summary = #{caseSummary},
+            counseling_effect = #{counselingEffect},
+            suggestion = #{suggestion},
+            close_type = #{closeType},
+            report_status = #{reportStatus},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="submit">
+        UPDATE case_report
+        SET report_status = 'SUBMITTED',
+            submit_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <sql id="caseReportSelect">
+        SELECT
+            cr.id,
+            CONCAT('CR', DATE_FORMAT(cr.create_time, '%Y%m%d'), LPAD(cr.id, 4, '0')) AS reportNo,
+            cr.student_id AS studentId,
+            su.real_name AS studentName,
+            sp.student_no AS studentNo,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            cr.problem_type_id AS problemTypeId,
+            pt.type_name AS problemTypeLabel,
+            cr.total_sessions AS totalSessions,
+            cr.effect_self_rating AS effectSelfRating,
+            cr.case_summary AS caseSummary,
+            cr.counseling_effect AS counselingEffect,
+            cr.suggestion,
+            cr.close_type AS closeType,
+            cr.report_status AS reportStatus,
+            cr.submit_time AS submitTime,
+            cr.update_time AS updateTime
+        FROM case_report cr
+        LEFT JOIN sys_user su ON cr.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
+    </sql>
+
+    <sql id="counselorReportWhere">
+        WHERE cr.counselor_id = #{query.counselorId}
+        <if test="query.status != null and query.status != ''">
+            AND cr.report_status = #{query.status}
+        </if>
+        <if test="query.studentKeyword != null and query.studentKeyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+        </if>
+    </sql>
+
+    <select id="pageForCounselor" resultType="com.tyut.psychological.report.vo.CaseReportVO">
+        <include refid="caseReportSelect"/>
+        <include refid="counselorReportWhere"/>
+        ORDER BY cr.update_time DESC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForCounselor" resultType="long">
+        SELECT COUNT(*)
+        FROM case_report cr
+        LEFT JOIN sys_user su ON cr.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        <include refid="counselorReportWhere"/>
+    </select>
+
+    <select id="selectDetailForCounselor" resultType="com.tyut.psychological.report.vo.CaseReportVO">
+        <include refid="caseReportSelect"/>
+        WHERE cr.id = #{id} AND cr.counselor_id = #{counselorId}
+    </select>
+
+    <sql id="adminReportWhere">
+        WHERE cr.report_status = 'SUBMITTED'
+        <if test="query.studentKeyword != null and query.studentKeyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+        </if>
+        <if test="query.counselorId != null">
+            AND cr.counselor_id = #{query.counselorId}
+        </if>
+        <if test="query.problemTypeId != null">
+            AND cr.problem_type_id = #{query.problemTypeId}
+        </if>
+        <if test="query.closeType != null and query.closeType != ''">
+            AND cr.close_type = #{query.closeType}
+        </if>
+        <if test="query.startDate != null">
+            AND DATE(cr.submit_time) &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND DATE(cr.submit_time) &lt;= #{query.endDate}
+        </if>
+    </sql>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.report.vo.CaseReportVO">
+        <include refid="caseReportSelect"/>
+        <include refid="adminReportWhere"/>
+        ORDER BY cr.submit_time DESC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM case_report cr
+        LEFT JOIN sys_user su ON cr.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        <include refid="adminReportWhere"/>
+    </select>
+
+    <select id="selectDetailForAdmin" resultType="com.tyut.psychological.report.vo.CaseReportVO">
+        <include refid="caseReportSelect"/>
+        WHERE cr.id = #{id} AND cr.report_status = 'SUBMITTED'
+    </select>
+
+    <select id="countCounselorStudentRelation" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE counselor_id = #{counselorId}
+          AND student_id = #{studentId}
+          AND schedule_status != 'CANCELED'
+    </select>
+</mapper>

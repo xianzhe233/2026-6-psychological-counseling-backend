@@ -7,6 +7,7 @@ import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.log.service.OperationLogService;
 import com.tyut.psychological.common.notification.service.NotificationLogService;
 import com.tyut.psychological.consultation.dto.ArrangeConsultationRequest;
+import com.tyut.psychological.consultation.dto.CounselorScheduleQuery;
 import com.tyut.psychological.consultation.dto.ScheduleQuery;
 import com.tyut.psychological.consultation.entity.ConsultationQueue;
 import com.tyut.psychological.consultation.entity.ConsultationSchedule;
@@ -16,6 +17,7 @@ import com.tyut.psychological.consultation.vo.AvailableSlotVO;
 import com.tyut.psychological.consultation.vo.ConflictInfoVO;
 import com.tyut.psychological.consultation.vo.ConflictResponseVO;
 import com.tyut.psychological.consultation.vo.ConsultationScheduleVO;
+import com.tyut.psychological.consultation.vo.CounselorScheduleVO;
 import com.tyut.psychological.profile.entity.StaffProfile;
 import com.tyut.psychological.profile.mapper.StaffProfileMapper;
 import com.tyut.psychological.schedule.entity.CounselingRoom;
@@ -180,6 +182,40 @@ public class ConsultationScheduleService {
         return new ArrangeResultVO(schedule.getId(), schedule.getScheduleNo());
     }
 
+    public PageResult<CounselorScheduleVO> pageForCounselor(Long counselorUserId, CounselorScheduleQuery query) {
+        StaffProfile counselor = validateCounselorByUserId(counselorUserId);
+        query.setCounselorId(counselor.getId());
+        normalizeCounselorQuery(query);
+        List<CounselorScheduleVO> records = consultationScheduleMapper.pageForCounselor(query);
+        long total = consultationScheduleMapper.countForCounselor(query);
+        long pages = (total + query.getPageSize() - 1) / query.getPageSize();
+        return new PageResult<>(records, total, query.getPageNum(), query.getPageSize(), pages);
+    }
+
+    public CounselorScheduleVO getCounselorScheduleDetail(Long counselorUserId, Long scheduleId) {
+        StaffProfile counselor = validateCounselorByUserId(counselorUserId);
+        CounselorScheduleVO detail = consultationScheduleMapper.selectDetailForCounselor(scheduleId, counselor.getId());
+        if (detail == null) {
+            throw new BusinessException(404, "咨询安排不存在或无权查看");
+        }
+        return detail;
+    }
+
+    public ConsultationSchedule requireOwnedSchedule(Long counselorStaffId, Long scheduleId) {
+        ConsultationSchedule schedule = consultationScheduleMapper.selectById(scheduleId);
+        if (schedule == null) {
+            throw new BusinessException(404, "咨询安排不存在");
+        }
+        if (!counselorStaffId.equals(schedule.getCounselorId())) {
+            throw new BusinessException(403, "无权操作该咨询安排");
+        }
+        return schedule;
+    }
+
+    public void updateStatus(Long scheduleId, String scheduleStatus) {
+        consultationScheduleMapper.updateStatus(scheduleId, scheduleStatus);
+    }
+
     public PageResult<ConsultationScheduleVO> pageForAssistant(ScheduleQuery query) {
         if (query.getPageNum() == null || query.getPageNum() < 1) {
             query.setPageNum(1);
@@ -228,6 +264,23 @@ public class ConsultationScheduleService {
 
         operationLogService.logSuccess("咨询安排", "取消咨询安排",
                 "安排ID: " + scheduleId + "，原因: " + reason);
+    }
+
+    private void normalizeCounselorQuery(CounselorScheduleQuery query) {
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            query.setPageNum(1);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            query.setPageSize(10);
+        }
+    }
+
+    private StaffProfile validateCounselorByUserId(Long counselorUserId) {
+        StaffProfile counselor = staffProfileMapper.selectByUserId(counselorUserId);
+        if (counselor == null) {
+            throw new BusinessException(400, "咨询师信息无效");
+        }
+        return validateCounselor(counselor.getId());
     }
 
     private StaffProfile requireAssistant(Long assistantUserId) {

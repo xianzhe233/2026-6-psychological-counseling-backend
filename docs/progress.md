@@ -603,6 +603,65 @@
 
 ---
 
+## 2026-06-09 阶段5：咨询师接口
+
+### 完成内容
+
+- 新增 `CounselorConsultationController`：咨询师日程分页/详情、咨询记录查询与保存、追加申请分页与新增。
+- 新增 `AdminExtensionController`：管理员审核追加咨询申请（通过/驳回）。
+- 新增 `CounselorCaseReportController`：结案报告列表、详情、保存草稿、更新、提交。
+- 新增 `AdminCaseReportController`：管理员查看已提交结案报告。
+- 新增实体/Mapper/Service：`ConsultationRecord`、`ExtensionRequest`、`CaseReport` 全套。
+- 保存咨询记录后同步更新 `consultation_schedule.schedule_status`。
+- 提交结案报告后关闭相关咨询安排状态。
+- 补充演示咨询安排数据与 `scripts/test-counselor-api.ps1` 测试脚本。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/consultation/controller/CounselorConsultationController.java`
+- `src/main/java/com/tyut/psychological/consultation/controller/AdminExtensionController.java`
+- `src/main/java/com/tyut/psychological/consultation/service/ConsultationRecordService.java`
+- `src/main/java/com/tyut/psychological/consultation/service/ExtensionRequestService.java`
+- `src/main/java/com/tyut/psychological/consultation/service/CounselorAccessService.java`
+- `src/main/java/com/tyut/psychological/report/**`
+- `src/main/resources/mapper/consultation/ConsultationRecordMapper.xml`
+- `src/main/resources/mapper/consultation/ExtensionRequestMapper.xml`
+- `src/main/resources/mapper/report/CaseReportMapper.xml`
+- `sql/demo_consultation.sql`
+- `scripts/test-counselor-api.ps1`
+
+### 接口变化
+
+- 新增 `GET /api/counselor/schedules`
+- 新增 `GET /api/counselor/schedules/{id}`
+- 新增 `GET /api/counselor/schedules/{scheduleId}/record`
+- 新增 `POST /api/counselor/schedules/{scheduleId}/record`
+- 新增 `GET /api/counselor/extension-requests`
+- 新增 `POST /api/counselor/extension-requests`
+- 新增 `GET /api/admin/extension-requests`
+- 新增 `POST /api/admin/extension-requests/{id}/approve`
+- 新增 `POST /api/admin/extension-requests/{id}/reject`
+- 新增 `GET /api/counselor/case-reports`
+- 新增 `GET /api/counselor/case-reports/{id}`
+- 新增 `POST /api/counselor/case-reports`
+- 新增 `PUT /api/counselor/case-reports/{id}`
+- 新增 `POST /api/counselor/case-reports/{id}/submit`
+- 新增 `GET /api/admin/case-reports`
+- 新增 `GET /api/admin/case-reports/{id}`
+
+### 验证方式
+
+- 使用咨询师账号 `counselor/123456` 调用上述接口
+- 使用管理员账号 `admin/123456` 审核追加申请、查看已提交报告
+- 运行 `scripts/test-counselor-api.ps1`
+
+### 遗留问题
+
+- Word 导出接口留待阶段6实现
+- 前端咨询师页面仍使用 mock，阶段七联调时切换
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text

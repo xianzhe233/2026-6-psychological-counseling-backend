@@ -1,8 +1,10 @@
 package com.tyut.psychological.consultation.mapper;
 
+import com.tyut.psychological.consultation.dto.CounselorScheduleQuery;
 import com.tyut.psychological.consultation.dto.ScheduleQuery;
 import com.tyut.psychological.consultation.entity.ConsultationSchedule;
 import com.tyut.psychological.consultation.vo.ConsultationScheduleVO;
+import com.tyut.psychological.consultation.vo.CounselorScheduleVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -49,4 +51,13 @@ public interface ConsultationScheduleMapper {
     List<ConsultationScheduleVO> selectByQueueId(@Param("queueId") Long queueId);
 
     long countActiveByQueueId(@Param("queueId") Long queueId);
+
+    List<CounselorScheduleVO> pageForCounselor(@Param("query") CounselorScheduleQuery query);
+
+    long countForCounselor(@Param("query") CounselorScheduleQuery query);
+
+    CounselorScheduleVO selectDetailForCounselor(@Param("id") Long id, @Param("counselorId") Long counselorId);
+
+    int closeSchedulesByStudentAndCounselor(@Param("studentId") Long studentId,
+                                            @Param("counselorId") Long counselorId);
 }
