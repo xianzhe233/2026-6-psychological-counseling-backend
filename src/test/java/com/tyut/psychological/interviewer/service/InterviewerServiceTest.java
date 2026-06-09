@@ -2,346 +2,209 @@ package com.tyut.psychological.interviewer.service;
 
 import com.tyut.psychological.appointment.entity.FirstVisitAppointment;
 import com.tyut.psychological.appointment.mapper.FirstVisitAppointmentMapper;
+import com.tyut.psychological.common.entity.ProblemType;
 import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.common.log.service.OperationLogService;
+import com.tyut.psychological.common.mapper.ProblemTypeMapper;
 import com.tyut.psychological.consultation.mapper.ConsultationQueueMapper;
 import com.tyut.psychological.interviewer.dto.InterviewResultRequest;
 import com.tyut.psychological.interviewer.entity.FirstVisitResult;
 import com.tyut.psychological.interviewer.mapper.FirstVisitResultMapper;
 import com.tyut.psychological.profile.entity.StaffProfile;
 import com.tyut.psychological.profile.mapper.StaffProfileMapper;
-import com.tyut.psychological.student.entity.FirstVisitForm;
 import com.tyut.psychological.student.mapper.StudentFormMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class InterviewerServiceTest {
 
     @Test
     void submitInterviewResultShouldCreateResultAndQueue() {
-        // 准备mock对象
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-        
-        // 创建service实例
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-        
-        // 准备测试数据
-        Long interviewerUserId = 1L;
-        Long appointmentId = 1L;
-        
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
-        
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setId(appointmentId);
-        appointment.setStudentId(1L);
-        appointment.setInterviewerId(1L);
-        appointment.setAppointmentStatus("APPROVED");
-        appointment.setPriorityFlag(0);
-        when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
-        
-        when(firstVisitResultMapper.selectByAppointmentId(appointmentId)).thenReturn(null);
-        
-        InterviewResultRequest request = new InterviewResultRequest();
-        request.setCrisisLevel("MEDIUM");
-        request.setProblemTypeId(1L);
-        request.setInterviewTime(LocalDateTime.now());
-        request.setConclusion("ARRANGE_CONSULTATION");
-        request.setSummary("测试摘要");
-        request.setNextAction("建议安排咨询");
-        
-        // 执行测试
-        interviewerService.submitInterviewResult(appointmentId, interviewerUserId, request);
-        
-        // 验证结果
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 1L, "APPROVED", 0);
+        context.mockProblemType(1L, 1);
+        when(context.firstVisitResultMapper.selectByAppointmentId(1L)).thenReturn(null);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 1L, "ARRANGE_CONSULTATION", "测试摘要", "建议安排咨询");
+
+        context.service.submitInterviewResult(1L, 1L, request);
+
         ArgumentCaptor<FirstVisitResult> resultCaptor = ArgumentCaptor.forClass(FirstVisitResult.class);
-        verify(firstVisitResultMapper).insert(resultCaptor.capture());
+        verify(context.firstVisitResultMapper).insert(resultCaptor.capture());
         FirstVisitResult savedResult = resultCaptor.getValue();
-        assertEquals(appointmentId, savedResult.getAppointmentId());
+        assertEquals(1L, savedResult.getAppointmentId());
         assertEquals(1L, savedResult.getInterviewerId());
         assertEquals("MEDIUM", savedResult.getCrisisLevel());
         assertEquals("ARRANGE_CONSULTATION", savedResult.getConclusion());
-        
-        // 验证预约状态更新
+
         ArgumentCaptor<FirstVisitAppointment> appointmentCaptor = ArgumentCaptor.forClass(FirstVisitAppointment.class);
-        verify(appointmentMapper).update(appointmentCaptor.capture());
+        verify(context.appointmentMapper).update(appointmentCaptor.capture());
         assertEquals("COMPLETED", appointmentCaptor.getValue().getAppointmentStatus());
-        
-        // 验证咨询队列创建
-        verify(consultationQueueMapper).insert(any());
-        
-        // 验证操作日志
-        verify(operationLogService).logSuccess(eq("初访任务"), eq("提交初访结果"), anyString());
+
+        verify(context.consultationQueueMapper).insert(any());
+        verify(context.operationLogService).logSuccess(eq("初访任务"), eq("提交初访结果"), any());
     }
 
     @Test
     void submitInterviewResultShouldRejectWhenStatusNotApproved() {
-        // 准备mock对象
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-        
-        // 创建service实例
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-        
-        // 准备测试数据
-        Long interviewerUserId = 1L;
-        Long appointmentId = 1L;
-        
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
-        
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setId(appointmentId);
-        appointment.setStudentId(1L);
-        appointment.setInterviewerId(1L);
-        appointment.setAppointmentStatus("PENDING"); // 状态不是APPROVED
-        when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
-        
-        InterviewResultRequest request = new InterviewResultRequest();
-        request.setCrisisLevel("MEDIUM");
-        request.setProblemTypeId(1L);
-        request.setInterviewTime(LocalDateTime.now());
-        request.setConclusion("ARRANGE_CONSULTATION");
-        
-        // 执行测试并验证异常
-        assertThrows(BusinessException.class, () -> {
-            interviewerService.submitInterviewResult(appointmentId, interviewerUserId, request);
-        });
-        
-        // 验证没有调用插入方法
-        verify(firstVisitResultMapper, never()).insert(any());
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 1L, "PENDING", 0);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 1L, "ARRANGE_CONSULTATION", null, null);
+
+        assertThrows(BusinessException.class, () -> context.service.submitInterviewResult(1L, 1L, request));
+        verify(context.firstVisitResultMapper, never()).insert(any());
     }
 
     @Test
     void submitInterviewResultShouldRejectWhenInterviewerMismatch() {
-        // 准备mock对象
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-        
-        // 创建service实例
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-        
-        // 准备测试数据
-        Long interviewerUserId = 1L;
-        Long appointmentId = 1L;
-        
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
-        
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setId(appointmentId);
-        appointment.setStudentId(1L);
-        appointment.setInterviewerId(2L); // 初访员ID不匹配
-        appointment.setAppointmentStatus("APPROVED");
-        when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
-        
-        InterviewResultRequest request = new InterviewResultRequest();
-        request.setCrisisLevel("MEDIUM");
-        request.setProblemTypeId(1L);
-        request.setInterviewTime(LocalDateTime.now());
-        request.setConclusion("ARRANGE_CONSULTATION");
-        
-        // 执行测试并验证异常
-        assertThrows(BusinessException.class, () -> {
-            interviewerService.submitInterviewResult(appointmentId, interviewerUserId, request);
-        });
-        
-        // 验证没有调用插入方法
-        verify(firstVisitResultMapper, never()).insert(any());
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 2L, "APPROVED", 0);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 1L, "ARRANGE_CONSULTATION", null, null);
+
+        assertThrows(BusinessException.class, () -> context.service.submitInterviewResult(1L, 1L, request));
+        verify(context.firstVisitResultMapper, never()).insert(any());
     }
 
     @Test
     void submitInterviewResultShouldRejectWhenResultAlreadyExists() {
-        // 准备mock对象
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-        
-        // 创建service实例
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-        
-        // 准备测试数据
-        Long interviewerUserId = 1L;
-        Long appointmentId = 1L;
-        
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
-        
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setId(appointmentId);
-        appointment.setStudentId(1L);
-        appointment.setInterviewerId(1L);
-        appointment.setAppointmentStatus("APPROVED");
-        when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
-        
-        // 模拟已存在初访结果
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 1L, "APPROVED", 0);
         FirstVisitResult existingResult = new FirstVisitResult();
         existingResult.setId(1L);
-        when(firstVisitResultMapper.selectByAppointmentId(appointmentId)).thenReturn(existingResult);
-        
-        InterviewResultRequest request = new InterviewResultRequest();
-        request.setCrisisLevel("MEDIUM");
-        request.setProblemTypeId(1L);
-        request.setInterviewTime(LocalDateTime.now());
-        request.setConclusion("ARRANGE_CONSULTATION");
-        
-        // 执行测试并验证异常
-        assertThrows(BusinessException.class, () -> {
-            interviewerService.submitInterviewResult(appointmentId, interviewerUserId, request);
-        });
-        
-        // 验证没有调用插入方法
-        verify(firstVisitResultMapper, never()).insert(any());
+        when(context.firstVisitResultMapper.selectByAppointmentId(1L)).thenReturn(existingResult);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 1L, "ARRANGE_CONSULTATION", null, null);
+
+        assertThrows(BusinessException.class, () -> context.service.submitInterviewResult(1L, 1L, request));
+        verify(context.firstVisitResultMapper, never()).insert(any());
     }
 
     @Test
     void submitInterviewResultShouldRejectWhenTransferWithoutNextAction() {
-        // 准备mock对象
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-        
-        // 创建service实例
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-        
-        // 准备测试数据
-        Long interviewerUserId = 1L;
-        Long appointmentId = 1L;
-        
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
-        
-        FirstVisitAppointment appointment = new FirstVisitAppointment();
-        appointment.setId(appointmentId);
-        appointment.setStudentId(1L);
-        appointment.setInterviewerId(1L);
-        appointment.setAppointmentStatus("APPROVED");
-        when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
-        
-        when(firstVisitResultMapper.selectByAppointmentId(appointmentId)).thenReturn(null);
-        
-        InterviewResultRequest request = new InterviewResultRequest();
-        request.setCrisisLevel("MEDIUM");
-        request.setProblemTypeId(1L);
-        request.setInterviewTime(LocalDateTime.now());
-        request.setConclusion("TRANSFER"); // 转介送诊
-        request.setNextAction(null); // 没有填写后续建议
-        
-        // 执行测试并验证异常
-        assertThrows(BusinessException.class, () -> {
-            interviewerService.submitInterviewResult(appointmentId, interviewerUserId, request);
-        });
-        
-        // 验证没有调用插入方法
-        verify(firstVisitResultMapper, never()).insert(any());
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 1L, "APPROVED", 0);
+        context.mockProblemType(1L, 1);
+        when(context.firstVisitResultMapper.selectByAppointmentId(1L)).thenReturn(null);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 1L, "TRANSFER", null, null);
+
+        assertThrows(BusinessException.class, () -> context.service.submitInterviewResult(1L, 1L, request));
+        verify(context.firstVisitResultMapper, never()).insert(any());
+    }
+
+    @Test
+    void submitInterviewResultShouldRejectWhenProblemTypeInvalid() {
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        context.mockAppointment(1L, 1L, "APPROVED", 0);
+        when(context.firstVisitResultMapper.selectByAppointmentId(1L)).thenReturn(null);
+        when(context.problemTypeMapper.selectById(99L)).thenReturn(null);
+
+        InterviewResultRequest request = createRequest("MEDIUM", 99L, "NO_NEED", null, null);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+            () -> context.service.submitInterviewResult(1L, 1L, request));
+        assertEquals(400, exception.getCode());
+        assertEquals("问题类型不存在或已停用", exception.getMessage());
+        verify(context.firstVisitResultMapper, never()).insert(any());
     }
 
     @Test
     void pageInterviewTasksShouldRejectDisabledInterviewer() {
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
-
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(0);
-        when(staffProfileMapper.selectByUserId(1L)).thenReturn(staffProfile);
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 0);
 
         BusinessException exception = assertThrows(BusinessException.class,
-            () -> interviewerService.pageInterviewTasks(1L, null, null, null, null, -1, 0));
+            () -> context.service.pageInterviewTasks(1L, null, null, null, null, -1, 0));
         assertEquals(403, exception.getCode());
         assertEquals("当前初访员已停用", exception.getMessage());
-        verify(appointmentMapper, never()).pageInterviewTasks(any(), any(), any(), any(), any());
+        verify(context.appointmentMapper, never()).pageInterviewTasks(any(), any(), any(), any(), any());
     }
 
     @Test
     void pageInterviewTasksShouldNormalizeInvalidPageParams() {
-        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
-        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
-        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
-        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
-        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
-        OperationLogService operationLogService = mock(OperationLogService.class);
+        TestContext context = new TestContext();
+        context.mockInterviewer(1L, 1);
+        when(context.appointmentMapper.pageInterviewTasks(1L, null, null, null, null)).thenReturn(List.of());
+        when(context.appointmentMapper.countInterviewTasks(1L, null, null, null, null)).thenReturn(0L);
 
-        InterviewerService interviewerService = new InterviewerService(
-            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
-            studentFormMapper, consultationQueueMapper, operationLogService
-        );
-
-        StaffProfile staffProfile = new StaffProfile();
-        staffProfile.setId(1L);
-        staffProfile.setStaffType("INTERVIEWER");
-        staffProfile.setStatus(1);
-        when(staffProfileMapper.selectByUserId(1L)).thenReturn(staffProfile);
-        when(appointmentMapper.pageInterviewTasks(1L, null, null, null, null)).thenReturn(java.util.List.of());
-        when(appointmentMapper.countInterviewTasks(1L, null, null, null, null)).thenReturn(0L);
-
-        var result = interviewerService.pageInterviewTasks(1L, null, null, null, null, 0, -5);
+        var result = context.service.pageInterviewTasks(1L, null, null, null, null, 0, -5);
         assertEquals(1, result.getPageNum());
         assertEquals(10, result.getPageSize());
         assertEquals(0, result.getTotal());
+    }
+
+    private static InterviewResultRequest createRequest(String crisisLevel, Long problemTypeId, String conclusion, String summary, String nextAction) {
+        InterviewResultRequest request = new InterviewResultRequest();
+        request.setCrisisLevel(crisisLevel);
+        request.setProblemTypeId(problemTypeId);
+        request.setInterviewTime(LocalDateTime.now());
+        request.setConclusion(conclusion);
+        request.setSummary(summary);
+        request.setNextAction(nextAction);
+        return request;
+    }
+
+    private static final class TestContext {
+        private final FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
+        private final FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
+        private final StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
+        private final StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
+        private final ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
+        private final OperationLogService operationLogService = mock(OperationLogService.class);
+        private final ProblemTypeMapper problemTypeMapper = mock(ProblemTypeMapper.class);
+        private final InterviewerService service = new InterviewerService(
+            appointmentMapper,
+            firstVisitResultMapper,
+            staffProfileMapper,
+            studentFormMapper,
+            consultationQueueMapper,
+            operationLogService,
+            problemTypeMapper
+        );
+
+        private void mockInterviewer(Long userId, Integer status) {
+            StaffProfile staffProfile = new StaffProfile();
+            staffProfile.setId(1L);
+            staffProfile.setStaffType("INTERVIEWER");
+            staffProfile.setStatus(status);
+            when(staffProfileMapper.selectByUserId(userId)).thenReturn(staffProfile);
+        }
+
+        private void mockAppointment(Long appointmentId, Long interviewerId, String status, Integer priorityFlag) {
+            FirstVisitAppointment appointment = new FirstVisitAppointment();
+            appointment.setId(appointmentId);
+            appointment.setStudentId(1L);
+            appointment.setInterviewerId(interviewerId);
+            appointment.setAppointmentStatus(status);
+            appointment.setPriorityFlag(priorityFlag);
+            when(appointmentMapper.selectById(appointmentId)).thenReturn(appointment);
+        }
+
+        private void mockProblemType(Long problemTypeId, Integer status) {
+            ProblemType problemType = new ProblemType();
+            problemType.setId(problemTypeId);
+            problemType.setStatus(status);
+            when(problemTypeMapper.selectById(problemTypeId)).thenReturn(problemType);
+        }
     }
 }

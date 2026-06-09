@@ -189,6 +189,12 @@ public class InterviewerService {
         if ("TRANSFER".equals(request.getConclusion()) && (request.getNextAction() == null || request.getNextAction().isBlank())) {
             throw new BusinessException(400, "转介送诊时后续建议必填");
         }
+
+        // 校验问题类型必须存在且启用
+        ProblemType problemType = problemTypeMapper.selectById(request.getProblemTypeId());
+        if (problemType == null || problemType.getStatus() == null || problemType.getStatus() != 1) {
+            throw new BusinessException(400, "问题类型不存在或已停用");
+        }
         
         // 创建初访结果
         FirstVisitResult firstVisitResult = new FirstVisitResult();
@@ -198,8 +204,8 @@ public class InterviewerService {
         firstVisitResult.setProblemTypeId(request.getProblemTypeId());
         firstVisitResult.setInterviewTime(request.getInterviewTime());
         firstVisitResult.setConclusion(request.getConclusion());
-        firstVisitResult.setSummary(request.getSummary());
-        firstVisitResult.setNextAction(request.getNextAction());
+        firstVisitResult.setSummary(request.getSummary() == null ? null : request.getSummary().trim());
+        firstVisitResult.setNextAction(request.getNextAction() == null ? null : request.getNextAction().trim());
         
         // 插入初访结果
         firstVisitResultMapper.insert(firstVisitResult);
