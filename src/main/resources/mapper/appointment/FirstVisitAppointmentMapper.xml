@@ -345,13 +345,24 @@
             fva.form_id,
             fvf.main_problem,
             fvf.problem_description,
+            fvf.expected_help,
+            fvf.mood_score,
+            fvf.sleep_score,
+            fvf.stress_score,
+            fvf.self_harm_flag,
+            fvf.emergency_flag,
             fvf.risk_level,
             fvf.risk_score,
             fva.appointment_date,
+            fva.slot_id,
             ts.slot_name,
             ts.start_time,
             ts.end_time,
+            fva.room_id,
             cr.room_name,
+            fva.interviewer_id,
+            interviewer_su.real_name AS interviewer_name,
+            fva.priority_flag,
             fva.appointment_status,
             fva.create_time
         FROM first_visit_appointment fva
@@ -360,6 +371,8 @@
         LEFT JOIN first_visit_form fvf ON fva.form_id = fvf.id
         LEFT JOIN time_slot ts ON fva.slot_id = ts.id
         LEFT JOIN counseling_room cr ON fva.room_id = cr.id
+        LEFT JOIN staff_profile isp ON fva.interviewer_id = isp.id
+        LEFT JOIN sys_user interviewer_su ON isp.user_id = interviewer_su.id
         WHERE fva.id = #{appointmentId} AND fva.interviewer_id = #{interviewerId}
     </select>
 

@@ -14,6 +14,8 @@ import com.tyut.psychological.interviewer.vo.InterviewTaskDetailVO;
 import com.tyut.psychological.interviewer.vo.InterviewTaskVO;
 import com.tyut.psychological.profile.entity.StaffProfile;
 import com.tyut.psychological.profile.mapper.StaffProfileMapper;
+import com.tyut.psychological.common.entity.ProblemType;
+import com.tyut.psychological.common.mapper.ProblemTypeMapper;
 import com.tyut.psychological.student.entity.FirstVisitForm;
 import com.tyut.psychological.student.mapper.StudentFormMapper;
 import org.springframework.stereotype.Service;
@@ -36,19 +38,22 @@ public class InterviewerService {
     private final StudentFormMapper studentFormMapper;
     private final ConsultationQueueMapper consultationQueueMapper;
     private final OperationLogService operationLogService;
+    private final ProblemTypeMapper problemTypeMapper;
     
     public InterviewerService(FirstVisitAppointmentMapper appointmentMapper,
                              FirstVisitResultMapper firstVisitResultMapper,
                              StaffProfileMapper staffProfileMapper,
                              StudentFormMapper studentFormMapper,
                              ConsultationQueueMapper consultationQueueMapper,
-                             OperationLogService operationLogService) {
+                             OperationLogService operationLogService,
+                             ProblemTypeMapper problemTypeMapper) {
         this.appointmentMapper = appointmentMapper;
         this.firstVisitResultMapper = firstVisitResultMapper;
         this.staffProfileMapper = staffProfileMapper;
         this.studentFormMapper = studentFormMapper;
         this.consultationQueueMapper = consultationQueueMapper;
         this.operationLogService = operationLogService;
+        this.problemTypeMapper = problemTypeMapper;
     }
     
     /**
@@ -88,6 +93,7 @@ public class InterviewerService {
     /**
      * 获取初访任务详情
      * 包含学生信息、登记表摘要、预约信息
+     * 已完成预约额外加载初访结果
      * @param appointmentId 预约ID
      * @param interviewerUserId 初访员用户ID
      * @return 任务详情
@@ -107,8 +113,37 @@ public class InterviewerService {
             if (form != null) {
                 detail.setMainProblem(form.getMainProblem());
                 detail.setProblemDescription(form.getProblemDescription());
+                detail.setExpectedHelp(form.getExpectedHelp());
+                detail.setMoodScore(form.getMoodScore());
+                detail.setSleepScore(form.getSleepScore());
+                detail.setStressScore(form.getStressScore());
+                detail.setSelfHarmFlag(form.getSelfHarmFlag());
+                detail.setEmergencyFlag(form.getEmergencyFlag());
                 detail.setRiskLevel(form.getRiskLevel());
                 detail.setRiskScore(form.getRiskScore());
+            }
+        }
+        
+        // 已完成预约加载初访结果
+        if ("COMPLETED".equals(detail.getAppointmentStatus())) {
+            FirstVisitResult result = firstVisitResultMapper.selectByAppointmentId(appointmentId);
+            if (result != null) {
+                InterviewTaskDetailVO.LatestResultVO latestResult = new InterviewTaskDetailVO.LatestResultVO();
+                latestResult.setCrisisLevel(result.getCrisisLevel());
+                latestResult.setProblemTypeId(result.getProblemTypeId());
+                latestResult.setInterviewTime(result.getInterviewTime());
+                latestResult.setConclusion(result.getConclusion());
+                latestResult.setSummary(result.getSummary());
+                latestResult.setNextAction(result.getNextAction());
+                latestResult.setSubmitTime(result.getCreateTime());
+                // 查询问题类型名称
+                if (result.getProblemTypeId() != null) {
+                    ProblemType problemType = problemTypeMapper.selectById(result.getProblemTypeId());
+                    if (problemType != null) {
+                        latestResult.setProblemTypeLabel(problemType.getTypeName());
+                    }
+                }
+                detail.setLatestResult(latestResult);
             }
         }
         
