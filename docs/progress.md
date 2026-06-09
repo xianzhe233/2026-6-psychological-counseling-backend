@@ -574,6 +574,35 @@
 
 ---
 
+## 2026-06-09 qxz review 修复：初访员模块
+
+### 完成内容
+
+- 复核 `ltb` 合入的初访员模块后，补强初访员身份校验：除“存在且角色为 INTERVIEWER”外，进一步要求工作人员状态为启用，避免停用账号继续访问任务或提交结果。
+- 为初访任务分页增加页码与页大小的兜底处理，避免非法分页参数触发内存分页边界异常。
+- 为 `InterviewerService` 补充单元测试，覆盖“停用初访员不可访问任务列表”和“非法分页参数自动归一化”两个场景，并同步修正既有测试数据使其符合启用校验。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/interviewer/service/InterviewerService.java`
+- `src/test/java/com/tyut/psychological/interviewer/service/InterviewerServiceTest.java`
+- `docs/progress.md`
+
+### 接口变化
+
+- 无新增接口，补强既有 `GET /api/interviewer/tasks`、`GET /api/interviewer/tasks/{appointmentId}`、`POST /api/interviewer/tasks/{appointmentId}/result` 的鉴权与参数健壮性。
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- 初访任务列表当前仍采用“先查全量再内存分页”的实现；当前数据量下可用，若后续演示数据增多，建议下沉到 SQL 分页。
+- 初访结果提交后通知日志未记录，后续可按业务需要补充。
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text
