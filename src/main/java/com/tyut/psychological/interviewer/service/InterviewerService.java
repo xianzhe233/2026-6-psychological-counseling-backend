@@ -65,16 +65,14 @@ public class InterviewerService {
      */
     public PageResult<InterviewTaskVO> pageInterviewTasks(Long interviewerUserId, LocalDate startDate, LocalDate endDate,
                                                          String status, String riskLevel, Integer pageNum, Integer pageSize) {
-        // 获取初访员的staff_profile ID
-        StaffProfile staffProfile = staffProfileMapper.selectByUserId(interviewerUserId);
-        if (staffProfile == null) {
-            throw new BusinessException(403, "当前用户不是工作人员");
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
         }
-        if (!"INTERVIEWER".equals(staffProfile.getStaffType())) {
-            throw new BusinessException(403, "当前用户不是初访员");
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
         }
-        
-        Long interviewerId = staffProfile.getId();
+
+        Long interviewerId = requireActiveInterviewer(interviewerUserId).getId();
         List<InterviewTaskVO> records = appointmentMapper.pageInterviewTasks(interviewerId, startDate, endDate, status, riskLevel);
         long total = appointmentMapper.countInterviewTasks(interviewerId, startDate, endDate, status, riskLevel);
         
@@ -95,16 +93,7 @@ public class InterviewerService {
      * @return 任务详情
      */
     public InterviewTaskDetailVO getInterviewTaskDetail(Long appointmentId, Long interviewerUserId) {
-        // 获取初访员的staff_profile ID
-        StaffProfile staffProfile = staffProfileMapper.selectByUserId(interviewerUserId);
-        if (staffProfile == null) {
-            throw new BusinessException(403, "当前用户不是工作人员");
-        }
-        if (!"INTERVIEWER".equals(staffProfile.getStaffType())) {
-            throw new BusinessException(403, "当前用户不是初访员");
-        }
-        
-        Long interviewerId = staffProfile.getId();
+        Long interviewerId = requireActiveInterviewer(interviewerUserId).getId();
         
         // 查询预约详情
         InterviewTaskDetailVO detail = appointmentMapper.selectInterviewTaskDetail(appointmentId, interviewerId);
@@ -137,16 +126,7 @@ public class InterviewerService {
      */
     @Transactional
     public void submitInterviewResult(Long appointmentId, Long interviewerUserId, InterviewResultRequest request) {
-        // 获取初访员的staff_profile ID
-        StaffProfile staffProfile = staffProfileMapper.selectByUserId(interviewerUserId);
-        if (staffProfile == null) {
-            throw new BusinessException(403, "当前用户不是工作人员");
-        }
-        if (!"INTERVIEWER".equals(staffProfile.getStaffType())) {
-            throw new BusinessException(403, "当前用户不是初访员");
-        }
-        
-        Long interviewerId = staffProfile.getId();
+        Long interviewerId = requireActiveInterviewer(interviewerUserId).getId();
         
         // 查询预约
         FirstVisitAppointment appointment = appointmentMapper.selectById(appointmentId);
@@ -202,6 +182,20 @@ public class InterviewerService {
         writeOperationLog("提交初访结果", "初访任务", "预约ID: " + appointmentId + ", 初访员ID: " + interviewerId);
     }
     
+    private StaffProfile requireActiveInterviewer(Long interviewerUserId) {
+        StaffProfile staffProfile = staffProfileMapper.selectByUserId(interviewerUserId);
+        if (staffProfile == null) {
+            throw new BusinessException(403, "当前用户不是工作人员");
+        }
+        if (staffProfile.getStatus() == null || staffProfile.getStatus() != 1) {
+            throw new BusinessException(403, "当前初访员已停用");
+        }
+        if (!"INTERVIEWER".equals(staffProfile.getStaffType())) {
+            throw new BusinessException(403, "当前用户不是初访员");
+        }
+        return staffProfile;
+    }
+
     /**
      * 创建咨询队列
      * 当初访结论为安排咨询时，将学生加入咨询队列

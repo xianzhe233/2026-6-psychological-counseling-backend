@@ -45,6 +45,7 @@ class InterviewerServiceTest {
         StaffProfile staffProfile = new StaffProfile();
         staffProfile.setId(1L);
         staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
         when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
         
         FirstVisitAppointment appointment = new FirstVisitAppointment();
@@ -112,6 +113,7 @@ class InterviewerServiceTest {
         StaffProfile staffProfile = new StaffProfile();
         staffProfile.setId(1L);
         staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
         when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
         
         FirstVisitAppointment appointment = new FirstVisitAppointment();
@@ -159,6 +161,7 @@ class InterviewerServiceTest {
         StaffProfile staffProfile = new StaffProfile();
         staffProfile.setId(1L);
         staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
         when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
         
         FirstVisitAppointment appointment = new FirstVisitAppointment();
@@ -206,6 +209,7 @@ class InterviewerServiceTest {
         StaffProfile staffProfile = new StaffProfile();
         staffProfile.setId(1L);
         staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
         when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
         
         FirstVisitAppointment appointment = new FirstVisitAppointment();
@@ -258,6 +262,7 @@ class InterviewerServiceTest {
         StaffProfile staffProfile = new StaffProfile();
         staffProfile.setId(1L);
         staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
         when(staffProfileMapper.selectByUserId(interviewerUserId)).thenReturn(staffProfile);
         
         FirstVisitAppointment appointment = new FirstVisitAppointment();
@@ -283,5 +288,60 @@ class InterviewerServiceTest {
         
         // 验证没有调用插入方法
         verify(firstVisitResultMapper, never()).insert(any());
+    }
+
+    @Test
+    void pageInterviewTasksShouldRejectDisabledInterviewer() {
+        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
+        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
+        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
+        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
+        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
+        OperationLogService operationLogService = mock(OperationLogService.class);
+
+        InterviewerService interviewerService = new InterviewerService(
+            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
+            studentFormMapper, consultationQueueMapper, operationLogService
+        );
+
+        StaffProfile staffProfile = new StaffProfile();
+        staffProfile.setId(1L);
+        staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(0);
+        when(staffProfileMapper.selectByUserId(1L)).thenReturn(staffProfile);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+            () -> interviewerService.pageInterviewTasks(1L, null, null, null, null, -1, 0));
+        assertEquals(403, exception.getCode());
+        assertEquals("当前初访员已停用", exception.getMessage());
+        verify(appointmentMapper, never()).pageInterviewTasks(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void pageInterviewTasksShouldNormalizeInvalidPageParams() {
+        FirstVisitAppointmentMapper appointmentMapper = mock(FirstVisitAppointmentMapper.class);
+        FirstVisitResultMapper firstVisitResultMapper = mock(FirstVisitResultMapper.class);
+        StaffProfileMapper staffProfileMapper = mock(StaffProfileMapper.class);
+        StudentFormMapper studentFormMapper = mock(StudentFormMapper.class);
+        ConsultationQueueMapper consultationQueueMapper = mock(ConsultationQueueMapper.class);
+        OperationLogService operationLogService = mock(OperationLogService.class);
+
+        InterviewerService interviewerService = new InterviewerService(
+            appointmentMapper, firstVisitResultMapper, staffProfileMapper,
+            studentFormMapper, consultationQueueMapper, operationLogService
+        );
+
+        StaffProfile staffProfile = new StaffProfile();
+        staffProfile.setId(1L);
+        staffProfile.setStaffType("INTERVIEWER");
+        staffProfile.setStatus(1);
+        when(staffProfileMapper.selectByUserId(1L)).thenReturn(staffProfile);
+        when(appointmentMapper.pageInterviewTasks(1L, null, null, null, null)).thenReturn(java.util.List.of());
+        when(appointmentMapper.countInterviewTasks(1L, null, null, null, null)).thenReturn(0L);
+
+        var result = interviewerService.pageInterviewTasks(1L, null, null, null, null, 0, -5);
+        assertEquals(1, result.getPageNum());
+        assertEquals(10, result.getPageSize());
+        assertEquals(0, result.getTotal());
     }
 }
