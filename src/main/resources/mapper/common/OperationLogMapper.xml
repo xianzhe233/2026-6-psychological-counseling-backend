@@ -14,4 +14,40 @@
         )
     </insert>
 
+    <sql id="adminWhere">
+        <if test="q.operationType != null and q.operationType != ''">
+            AND operation_type = #{q.operationType}
+        </if>
+        <if test="q.resultStatus != null and q.resultStatus != ''">
+            AND result_status = #{q.resultStatus}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (operator_name LIKE CONCAT('%', #{q.keyword}, '%')
+                 OR operation_desc LIKE CONCAT('%', #{q.keyword}, '%'))
+        </if>
+        <if test="q.startTime != null">
+            AND create_time &gt;= #{q.startTime}
+        </if>
+        <if test="q.endTime != null">
+            AND create_time &lt;= #{q.endTime}
+        </if>
+    </sql>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.common.log.vo.OperationLogVO">
+        SELECT id, operator_name AS operatorName, role_code AS roleCode,
+               module_name AS moduleName, operation_type AS operationType,
+               operation_desc AS operationDesc, request_url AS requestUrl,
+               result_status AS resultStatus, error_message AS errorMessage,
+               ip_address AS ipAddress, execution_time AS executionTime,
+               create_time AS createTime
+        FROM operation_log
+        WHERE 1=1 <include refid="adminWhere"/>
+        ORDER BY create_time DESC
+        LIMIT #{q.pageSize} OFFSET #{q.offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*) FROM operation_log WHERE 1=1 <include refid="adminWhere"/>
+    </select>
+
 </mapper>

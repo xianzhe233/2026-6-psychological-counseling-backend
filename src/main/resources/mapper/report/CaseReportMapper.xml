@@ -146,4 +146,48 @@
           AND student_id = #{studentId}
           AND schedule_status != 'CANCELED'
     </select>
+    <select id="selectExportForCounselor" resultType="com.tyut.psychological.report.vo.CaseReportExportVO">
+        SELECT
+            cr.id,
+            CONCAT('CR', DATE_FORMAT(cr.create_time, '%Y%m%d'), LPAD(cr.id, 4, '0')) AS reportNo,
+            su.real_name AS studentName,
+            sp.student_no AS studentNo,
+            sp.gender,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            pt.type_name AS problemTypeLabel,
+            cr.total_sessions AS totalSessions,
+            cr.effect_self_rating AS effectSelfRating,
+            cr.case_summary AS caseSummary,
+            cr.suggestion,
+            cr.report_status AS reportStatus
+        FROM case_report cr
+        LEFT JOIN sys_user su ON cr.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
+        WHERE cr.id = #{id} AND cr.counselor_id = #{counselorId}
+    </select>
+
+    <select id="selectExportForAdmin" resultType="com.tyut.psychological.report.vo.CaseReportExportVO">
+        SELECT
+            cr.id,
+            CONCAT('CR', DATE_FORMAT(cr.create_time, '%Y%m%d'), LPAD(cr.id, 4, '0')) AS reportNo,
+            su.real_name AS studentName,
+            sp.student_no AS studentNo,
+            sp.gender,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            pt.type_name AS problemTypeLabel,
+            cr.total_sessions AS totalSessions,
+            cr.effect_self_rating AS effectSelfRating,
+            cr.case_summary AS caseSummary,
+            cr.suggestion,
+            cr.report_status AS reportStatus
+        FROM case_report cr
+        LEFT JOIN sys_user su ON cr.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
+        WHERE cr.id = #{id} AND cr.report_status = 'SUBMITTED'
+    </select>
+
 </mapper>
