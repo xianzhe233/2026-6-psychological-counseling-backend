@@ -21,6 +21,9 @@
         <if test="q.resultStatus != null and q.resultStatus != ''">
             AND result_status = #{q.resultStatus}
         </if>
+        <if test="q.moduleName != null and q.moduleName != ''">
+            AND module_name = #{q.moduleName}
+        </if>
         <if test="q.keyword != null and q.keyword != ''">
             AND (operator_name LIKE CONCAT('%', #{q.keyword}, '%')
                  OR operation_desc LIKE CONCAT('%', #{q.keyword}, '%'))

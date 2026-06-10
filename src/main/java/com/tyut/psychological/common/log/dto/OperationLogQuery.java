@@ -6,6 +6,7 @@ public class OperationLogQuery {
     private Integer pageNum;
     private Integer pageSize;
     private String operationType;
+    private String moduleName;
     private String resultStatus;
     private String keyword;
     private LocalDateTime startTime;
@@ -18,6 +19,8 @@ public class OperationLogQuery {
     public int offset() { return (pageNum - 1) * pageSize; }
     public String getOperationType() { return operationType; }
     public void setOperationType(String operationType) { this.operationType = operationType; }
+    public String getModuleName() { return moduleName; }
+    public void setModuleName(String moduleName) { this.moduleName = moduleName; }
     public String getResultStatus() { return resultStatus; }
     public void setResultStatus(String resultStatus) { this.resultStatus = resultStatus; }
     public String getKeyword() { return keyword; }

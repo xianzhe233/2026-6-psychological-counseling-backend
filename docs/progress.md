@@ -901,3 +901,33 @@
 
 - 统计接口已在后端落地，但前端统计页仍使用 mock 适配函数，需在下一轮联调中切换到真实统计路径与字段。
 
+---
+
+## 2026-06-10 qxz review 修复：阶段7联调回归问题
+
+### 完成内容
+
+- 在合入 zyt 阶段7联调提交后复测后端，定位并修复 `CaseReportMapper` 中重复声明 `countCounselorStudentRelation` 导致的编译失败。
+- 为管理员操作日志补齐真实可用的 `moduleName` 筛选参数，打通 Controller、DTO 与 MyBatis SQL，避免前端筛选项成为无效 UI。
+- 保持日志分页参数归一化逻辑不回退，在修复联调冲突时继续沿用 `qxz` 既有的分页健壮性处理。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/report/mapper/CaseReportMapper.java`
+- `src/main/java/com/tyut/psychological/common/log/controller/AdminLogController.java`
+- `src/main/java/com/tyut/psychological/common/log/dto/OperationLogQuery.java`
+- `src/main/resources/mapper/common/OperationLogMapper.xml`
+- `docs/progress.md`
+
+### 接口变化
+
+- 补强既有 `GET /api/admin/logs/operations`，新增支持 `moduleName` 精确筛选。
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- Mockito 仍通过动态 attach agent 运行测试，JDK 后续版本可能需要按提示改为显式 `-javaagent` 配置。
+
