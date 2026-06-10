@@ -88,7 +88,7 @@ public class StatisticsService {
     }
 
     private List<String> monthAxis(StatisticsQuery q) {
-        return q.getStartDate().datesUntil(q.getEndDate().plusMonths(1), java.time.temporal.ChronoUnit.MONTHS)
+        return q.getStartDate().datesUntil(q.getEndDate().plusMonths(1), java.time.Period.ofMonths(1))
                 .map(MONTH_FMT::format).collect(Collectors.toList());
     }
 
