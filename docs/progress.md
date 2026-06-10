@@ -723,4 +723,26 @@
 
 ### 遗留问题
 - ...
-```
+
+---
+
+## 2026-06-10 修复学生通知查询SQL兼容性问题
+
+### 完成内容
+
+- 修复 `StudentAppointmentMapper.xml` 中通知查询SQL，移除数据库表中不存在的 `send_status` 和 `related_id` 列
+- 将 `receiver_user_id` 改为 `user_id` 以兼容不同版本的数据库表结构
+- 保留基础查询列：id, notify_type, title, content, create_time
+
+### 影响文件
+
+- `src/main/resources/mapper/student/StudentAppointmentMapper.xml`
+
+### 验证方式
+
+- `./mvnw compile -DskipTests`
+- 重启后端服务后测试"我的通知"页面
+
+### 遗留问题
+
+- 数据库表结构与init_schema.sql不一致，建议重新导入数据库表结构以获得完整功能
