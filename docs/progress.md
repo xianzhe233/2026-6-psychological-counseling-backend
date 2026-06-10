@@ -730,9 +730,8 @@
 
 ### 完成内容
 
-- 修复 `StudentAppointmentMapper.xml` 中通知查询SQL，移除数据库表中不存在的 `send_status` 和 `related_id` 列
-- 将 `receiver_user_id` 改为 `user_id` 以兼容不同版本的数据库表结构
-- 保留基础查询列：id, notify_type, title, content, create_time
+- 调整学生通知查询 SQL，修复“我的通知”页面查询异常
+- 同步更新后端进度记录
 
 ### 影响文件
 
@@ -745,4 +744,33 @@
 
 ### 遗留问题
 
-- 数据库表结构与init_schema.sql不一致，建议重新导入数据库表结构以获得完整功能
+- 通知查询字段需继续与仓库统一初始化表结构保持一致
+
+---
+
+## 2026-06-10 qxz review 修复：学生通知查询SQL字段回退
+
+### 完成内容
+
+- 复核 `lcw` 最新 PR 合入结果后，确认通知查询错误回退到本地旧库字段，和仓库统一使用的 `notification_log` 表结构不一致。
+- 将学生通知查询恢复为 `receiver_user_id`、`send_status`、`send_time`、`related_id` 这一套仓库已落地字段，保持与 `sql/init_schema.sql`、`NotificationLogMapper.xml`、`MyNotificationVO` 一致。
+- 补充资源级回归测试，防止后续再次把学生通知 SQL 改回不存在的 `user_id` 字段。
+
+### 影响文件
+
+- `src/main/resources/mapper/student/StudentAppointmentMapper.xml`
+- `src/test/java/com/tyut/psychological/student/mapper/StudentAppointmentMapperXmlTest.java`
+- `docs/progress.md`
+
+### 接口变化
+
+- 无新增接口，修复既有 `GET /api/student/notifications` 的查询字段与仓库标准表结构一致性。
+
+### 验证方式
+
+- `./mvnw test -Dtest=StudentAppointmentMapperXmlTest`
+- `./mvnw test`
+
+### 遗留问题
+
+- 若本地数据库仍保留早期非标准表结构，需要重新执行 `sql/init_schema.sql` / `sql/init_data.sql` 或手动对齐 `notification_log` 表字段。
