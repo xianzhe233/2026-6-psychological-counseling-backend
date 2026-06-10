@@ -142,7 +142,7 @@
 
     <select id="countCounselorStudentRelation" resultType="long">
         SELECT COUNT(*) FROM consultation_schedule
-        WHERE counselor_id = #{counselorId}
+        WHERE counselor_id = #{counselorStaffId}
           AND student_id = #{studentId}
           AND schedule_status != 'CANCELED'
     </select>

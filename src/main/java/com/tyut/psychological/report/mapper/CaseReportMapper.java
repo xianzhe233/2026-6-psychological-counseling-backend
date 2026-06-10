@@ -38,4 +38,6 @@ public interface CaseReportMapper {
     CaseReportExportVO selectExportForCounselor(@Param("id") Long id, @Param("counselorId") Long counselorId);
 
     CaseReportExportVO selectExportForAdmin(@Param("id") Long id);
+
+    long countCounselorStudentRelation(@Param("counselorStaffId") Long counselorStaffId, @Param("studentId") Long studentId);
 }
