@@ -33,8 +33,8 @@ public class CaseReportExportService {
     }
 
     public CaseReportExportVO fetchForCounselor(Long counselorUserId, Long reportId) {
-        counselorAccessService.requireCounselorStaff(counselorUserId);
-        CaseReportExportVO r = caseReportMapper.selectExportForCounselor(reportId, counselorUserId);
+        Long counselorStaffId = counselorAccessService.requireCounselorStaff(counselorUserId).getId();
+        CaseReportExportVO r = caseReportMapper.selectExportForCounselor(reportId, counselorStaffId);
         if (r == null) throw new BusinessException(404, "结案报告不存在或无权下载");
         return r;
     }
