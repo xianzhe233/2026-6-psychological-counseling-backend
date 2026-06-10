@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.consultation.mapper.ExtensionRequestMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.consultation.entity.ExtensionRequest">
+        SELECT * FROM extension_request WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO extension_request (
+            student_id, counselor_id, request_sessions, reason, request_status, create_time
+        ) VALUES (
+            #{studentId}, #{counselorId}, #{requestSessions}, #{reason}, #{requestStatus}, NOW()
+        )
+    </insert>
+
+    <update id="updateAudit">
+        UPDATE extension_request
+        SET request_status = #{requestStatus},
+            audit_admin_id = #{auditAdminId},
+            audit_time = NOW(),
+            audit_remark = #{auditRemark},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <sql id="extensionSelect">
+        SELECT
+            er.id,
+            er.student_id AS studentId,
+            su.real_name AS studentName,
+            sp.student_no AS studentNo,
+            er.request_sessions AS requestSessions,
+            er.reason,
+            er.request_status AS status,
+            er.audit_remark AS auditRemark,
+            er.create_time AS createTime
+        FROM extension_request er
+        LEFT JOIN sys_user su ON er.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+    </sql>
+
+    <select id="pageForCounselor" resultType="com.tyut.psychological.consultation.vo.ExtensionRequestVO">
+        <include refid="extensionSelect"/>
+        WHERE er.counselor_id = #{query.counselorId}
+        <if test="query.status != null and query.status != ''">
+            AND er.request_status = #{query.status}
+        </if>
+        ORDER BY er.create_time DESC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForCounselor" resultType="long">
+        SELECT COUNT(*)
+        FROM extension_request er
+        WHERE er.counselor_id = #{query.counselorId}
+        <if test="query.status != null and query.status != ''">
+            AND er.request_status = #{query.status}
+        </if>
+    </select>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.consultation.vo.ExtensionRequestVO">
+        <include refid="extensionSelect"/>
+        WHERE 1=1
+        <if test="query.status != null and query.status != ''">
+            AND er.request_status = #{query.status}
+        </if>
+        ORDER BY er.create_time DESC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*) FROM extension_request er WHERE 1=1
+        <if test="query.status != null and query.status != ''">
+            AND er.request_status = #{query.status}
+        </if>
+    </select>
+
+    <select id="countCounselorStudentRelation" resultType="long">
+        SELECT COUNT(*) FROM consultation_schedule
+        WHERE counselor_id = #{counselorId}
+          AND student_id = #{studentId}
+          AND schedule_status != 'CANCELED'
+    </select>
+</mapper>

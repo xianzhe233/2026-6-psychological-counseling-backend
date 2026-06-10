@@ -189,4 +189,90 @@
         WHERE queue_id = #{queueId}
           AND <include refid="activeScheduleFilter"/>
     </select>
+
+    <sql id="counselorScheduleSelect">
+        SELECT
+            cs.id,
+            cs.schedule_no AS scheduleNo,
+            cs.student_id AS studentId,
+            su.real_name AS studentName,
+            sp.student_no AS studentNo,
+            sp.college,
+            COALESCE(sp.contact_phone, su.phone) AS phone,
+            COALESCE(cq.problem_type_id, fvr.problem_type_id) AS problemTypeId,
+            pt.type_name AS problemTypeLabel,
+            COALESCE(cq.crisis_level, fvr.crisis_level) AS crisisLevel,
+            cs.consultation_date AS consultationDate,
+            ts.slot_name AS slotName,
+            ts.start_time AS startTime,
+            ts.end_time AS endTime,
+            cr.room_name AS roomName,
+            cs.session_no AS sessionIndex,
+            cs.schedule_status AS status,
+            cs.counselor_id AS counselorId,
+            counselor_su.real_name AS counselorName,
+            fvr.summary AS firstVisitSummary,
+            fvr.next_action AS nextAction
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN consultation_queue cq ON cs.queue_id = cq.id
+        LEFT JOIN first_visit_result fvr ON cq.first_visit_result_id = fvr.id
+        LEFT JOIN problem_type pt ON COALESCE(cq.problem_type_id, fvr.problem_type_id) = pt.id
+        LEFT JOIN staff_profile csp ON cs.counselor_id = csp.id
+        LEFT JOIN sys_user counselor_su ON csp.user_id = counselor_su.id
+        LEFT JOIN time_slot ts ON cs.slot_id = ts.id
+        LEFT JOIN counseling_room cr ON cs.room_id = cr.id
+    </sql>
+
+    <sql id="counselorScheduleWhere">
+        WHERE cs.counselor_id = #{query.counselorId}
+        <if test="query.studentKeyword != null and query.studentKeyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR sp.student_no LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR sp.college LIKE CONCAT('%', #{query.studentKeyword}, '%')
+                 OR pt.type_name LIKE CONCAT('%', #{query.studentKeyword}, '%'))
+        </if>
+        <if test="query.startDate != null">
+            AND cs.consultation_date &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND cs.consultation_date &lt;= #{query.endDate}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND cs.schedule_status = #{query.status}
+        </if>
+    </sql>
+
+    <select id="pageForCounselor" resultType="com.tyut.psychological.consultation.vo.CounselorScheduleVO">
+        <include refid="counselorScheduleSelect"/>
+        <include refid="counselorScheduleWhere"/>
+        ORDER BY cs.consultation_date ASC, ts.start_time ASC
+        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+    </select>
+
+    <select id="countForCounselor" resultType="long">
+        SELECT COUNT(*)
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.student_id = su.id
+        LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN consultation_queue cq ON cs.queue_id = cq.id
+        LEFT JOIN first_visit_result fvr ON cq.first_visit_result_id = fvr.id
+        LEFT JOIN problem_type pt ON COALESCE(cq.problem_type_id, fvr.problem_type_id) = pt.id
+        <include refid="counselorScheduleWhere"/>
+    </select>
+
+    <select id="selectDetailForCounselor" resultType="com.tyut.psychological.consultation.vo.CounselorScheduleVO">
+        <include refid="counselorScheduleSelect"/>
+        WHERE cs.id = #{id} AND cs.counselor_id = #{counselorId}
+    </select>
+
+    <update id="closeSchedulesByStudentAndCounselor">
+        UPDATE consultation_schedule
+        SET schedule_status = 'CLOSED',
+            update_time = NOW()
+        WHERE student_id = #{studentId}
+          AND counselor_id = #{counselorId}
+          AND schedule_status IN ('RESERVED', 'COMPLETED', 'ABSENT', 'LEAVE', 'DROPPED')
+    </update>
 </mapper>

@@ -100,4 +100,15 @@ public class NotificationLogService {
                 + "，原因：" + reason;
         log(receiverUserId, receiverName, phone, "CONSULTATION_CANCELED", title, content, scheduleId);
     }
+
+    public void logExtensionAudited(Long receiverUserId, String receiverName, String phone,
+                                    Long requestId, String status, String remark) {
+        String title = "追加咨询审核结果";
+        String statusLabel = "APPROVED".equals(status) ? "通过" : "驳回";
+        String content = "您的追加咨询申请已审核，结果：" + statusLabel;
+        if (remark != null && !remark.isBlank()) {
+            content += "，备注：" + remark;
+        }
+        log(receiverUserId, receiverName, phone, "EXTENSION_AUDITED", title, content, requestId);
+    }
 }
