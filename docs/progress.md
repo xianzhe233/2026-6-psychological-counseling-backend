@@ -808,3 +808,32 @@
 ### 遗留问题
 
 - 若本地数据库仍保留早期手工调整过的旧 `notification_log` 结构，仍需按仓库脚本重新对齐后再联调。
+
+---
+
+## 2026-06-10 qxz review 修复：学生分页参数健壮性
+
+### 完成内容
+
+- 在同步 `dev` 并复核 lcw 已合入 PR 后，继续检查学生端接口，发现“我的预约”和“我的通知”仍采用内存分页，`pageNum/pageSize` 传入 0 或负数时会直接触发 `subList` 边界异常。
+- 为 `StudentAppointmentService` 增加分页参数归一化逻辑，将非法页码统一回落到 `pageNum=1`、`pageSize=10`，避免坏参数导致 500。
+- 新增 `StudentAppointmentServiceTest`，覆盖学生预约分页与通知分页两处负参数场景，防止后续回归。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/student/service/StudentAppointmentService.java`
+- `src/test/java/com/tyut/psychological/student/service/StudentAppointmentServiceTest.java`
+- `docs/progress.md`
+
+### 接口变化
+
+- 无新增接口，补强既有 `GET /api/student/appointments` 与 `GET /api/student/notifications` 的分页参数健壮性。
+
+### 验证方式
+
+- `./mvnw test -Dtest=StudentAppointmentServiceTest,StudentAppointmentMapperXmlTest,NotificationLogMapperXmlTest,FirstVisitAppointmentMapperXmlTest`
+- `./mvnw test`
+
+### 遗留问题
+
+- 学生预约与通知列表当前仍采用“先查全量再内存分页”的实现；当前数据量下可用，若后续演示数据继续增大，建议下沉为 SQL 分页。
