@@ -57,9 +57,11 @@ public class StudentAppointmentController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             HttpServletRequest httpRequest) {
         CurrentUserVO currentUser = SessionUtils.getRequiredCurrentUser(httpRequest);
-        return Result.success(appointmentService.getMyAppointments(currentUser, status, pageNum, pageSize));
+        return Result.success(appointmentService.getMyAppointments(currentUser, status, startDate, endDate, pageNum, pageSize));
     }
 
     @PostMapping("/appointments/{id}/cancel")

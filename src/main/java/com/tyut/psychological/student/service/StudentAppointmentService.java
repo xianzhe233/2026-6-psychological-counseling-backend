@@ -136,14 +136,20 @@ public class StudentAppointmentService {
     /**
      * 查询学生预约列表
      */
-    public PageResult<MyAppointmentVO> getMyAppointments(CurrentUserVO user, String status, Integer pageNum, Integer pageSize) {
+    public PageResult<MyAppointmentVO> getMyAppointments(CurrentUserVO user,
+                                                         String status,
+                                                         LocalDate startDate,
+                                                         LocalDate endDate,
+                                                         Integer pageNum,
+                                                         Integer pageSize) {
         requireStudent(user);
+        validateDateRange(startDate, endDate);
         Long studentId = user.getId();
         int safePageNum = normalizePageNum(pageNum);
         int safePageSize = normalizePageSize(pageSize);
 
-        List<MyAppointmentVO> records = studentAppointmentMapper.selectStudentAppointments(studentId, status);
-        long total = studentAppointmentMapper.countStudentAppointments(studentId, status);
+        List<MyAppointmentVO> records = studentAppointmentMapper.selectStudentAppointments(studentId, status, startDate, endDate);
+        long total = studentAppointmentMapper.countStudentAppointments(studentId, status, startDate, endDate);
 
         int from = (safePageNum - 1) * safePageSize;
         int to = Math.min(from + safePageSize, records.size());
@@ -229,6 +235,12 @@ public class StudentAppointmentService {
     private void requireStudent(CurrentUserVO user) {
         if (user == null || user.getRoles() == null || !user.getRoles().contains(RoleCode.STUDENT)) {
             throw new BusinessException(403, "当前角色无权访问");
+        }
+    }
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new BusinessException(400, "开始日期不能晚于结束日期");
         }
     }
 

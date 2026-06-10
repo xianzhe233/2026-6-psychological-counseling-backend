@@ -52,6 +52,13 @@ public class DutyScheduleService {
     public PageResult<DutyScheduleVO> pageDutySchedules(String staffType, Long staffId, 
                                                        LocalDate startDate, LocalDate endDate, 
                                                        Integer status, Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+
         List<DutyScheduleVO> records = dutyScheduleMapper.pageDutySchedules(staffType, staffId, startDate, endDate, status);
         long total = dutyScheduleMapper.countDutySchedules(staffType, staffId, startDate, endDate, status);
         // 内存分页（数据量小）

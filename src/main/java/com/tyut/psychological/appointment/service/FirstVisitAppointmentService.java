@@ -68,6 +68,13 @@ public class FirstVisitAppointmentService {
     public PageResult<AppointmentAuditVO> pageAuditList(String keyword, String status, String riskLevel,
                                                        LocalDate startDate, LocalDate endDate,
                                                        Integer priorityFlag, Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
+
         List<AppointmentAuditVO> records = appointmentMapper.pageAuditList(keyword, status, riskLevel, startDate, endDate, priorityFlag);
         long total = appointmentMapper.countAuditList(keyword, status, riskLevel, startDate, endDate, priorityFlag);
         // 内存分页（数据量小）
