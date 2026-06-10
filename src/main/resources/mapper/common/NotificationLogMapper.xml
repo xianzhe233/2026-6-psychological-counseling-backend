@@ -4,11 +4,9 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO notification_log (
-            receiver_user_id, receiver_name, phone, notify_type, title,
-            content, send_status, send_time, related_id, create_time
+            user_id, notify_type, title, content, create_time
         ) VALUES (
-            #{receiverUserId}, #{receiverName}, #{phone}, #{notifyType}, #{title},
-            #{content}, #{sendStatus}, #{sendTime}, #{relatedId}, NOW()
+            #{receiverUserId}, #{notifyType}, #{title}, #{content}, NOW()
         )
     </insert>
 
@@ -18,17 +16,17 @@
             title,
             content,
             notify_type,
-            send_time,
+            create_time,
             0 AS read_status
         FROM notification_log
-        WHERE receiver_user_id = #{studentId}
-        ORDER BY send_time DESC
+        WHERE user_id = #{studentId}
+        ORDER BY create_time DESC
     </select>
 
     <select id="countByStudentId" resultType="long">
         SELECT COUNT(*)
         FROM notification_log
-        WHERE receiver_user_id = #{studentId}
+        WHERE user_id = #{studentId}
     </select>
 
 </mapper>
