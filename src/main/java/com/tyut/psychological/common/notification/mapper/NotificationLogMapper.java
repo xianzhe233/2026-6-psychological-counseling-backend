@@ -1,6 +1,8 @@
 package com.tyut.psychological.common.notification.mapper;
 
+import com.tyut.psychological.common.notification.dto.NotificationLogQuery;
 import com.tyut.psychological.common.notification.entity.NotificationLog;
+import com.tyut.psychological.common.notification.vo.NotificationLogVO;
 import com.tyut.psychological.common.notification.vo.StudentNotificationVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -33,4 +35,8 @@ public interface NotificationLogMapper {
      * @return 通知数量
      */
     long countByStudentId(@Param("studentId") Long studentId);
+
+    List<NotificationLogVO> pageForAdmin(@Param("query") NotificationLogQuery query);
+
+    long countForAdmin(@Param("query") NotificationLogQuery query);
 }

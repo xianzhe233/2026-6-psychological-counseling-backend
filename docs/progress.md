@@ -746,3 +746,51 @@
 ### 遗留问题
 
 - 数据库表结构与init_schema.sql不一致，建议重新导入数据库表结构以获得完整功能
+
+---
+
+## 2026-06-10 阶段6：Word 导出与统计接口
+
+### 完成内容
+
+- 新增 Apache POI 依赖，实现 `CaseReportExportService` 生成结案报告 Word 文档。
+- 新增咨询师/管理员 Word 下载接口：`GET /api/counselor/case-reports/{id}/export-word`、`GET /api/admin/case-reports/{id}/export-word`。
+- 新增统计模块：总览、月度趋势、问题类型分布、危机等级分布、咨询师工作量 5 组接口。
+- 新增管理员日志分页接口：通知日志、操作日志。
+
+### 影响文件
+
+- `pom.xml`
+- `src/main/java/com/tyut/psychological/report/service/CaseReportExportService.java`
+- `src/main/java/com/tyut/psychological/report/controller/CounselorCaseReportController.java`
+- `src/main/java/com/tyut/psychological/report/controller/AdminCaseReportController.java`
+- `src/main/java/com/tyut/psychological/statistics/**`
+- `src/main/java/com/tyut/psychological/common/log/controller/AdminLogController.java`
+- `src/main/java/com/tyut/psychological/common/log/service/AdminLogService.java`
+- `src/main/resources/mapper/statistics/StatisticsMapper.xml`
+- `src/main/resources/mapper/common/NotificationLogMapper.xml`
+- `src/main/resources/mapper/common/OperationLogMapper.xml`
+- `src/main/resources/mapper/report/CaseReportMapper.xml`
+
+### 接口变化
+
+- `GET /api/counselor/case-reports/{id}/export-word`
+- `GET /api/admin/case-reports/{id}/export-word`
+- `GET /api/admin/statistics/overview`
+- `GET /api/admin/statistics/monthly-trend`
+- `GET /api/admin/statistics/problem-types`
+- `GET /api/admin/statistics/crisis-levels`
+- `GET /api/admin/statistics/counselor-workload`
+- `GET /api/admin/logs/notifications`
+- `GET /api/admin/logs/operations`
+
+### 验证方式
+
+- `./mvnw compile test`
+- 管理员登录后访问统计与日志接口
+- 咨询师/管理员下载已保存或已提交结案报告 Word
+
+### 遗留问题
+
+- 统计 Excel 导出、批量 Word 下载仍为增强项，未在本阶段实现。
+- 前端统计/日志页面仍使用 mock，阶段7联调时切换真实接口。

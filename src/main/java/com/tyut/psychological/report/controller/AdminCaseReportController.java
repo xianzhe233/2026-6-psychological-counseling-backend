@@ -5,8 +5,12 @@ import com.tyut.psychological.common.api.Result;
 import com.tyut.psychological.common.enums.RoleCode;
 import com.tyut.psychological.common.util.SessionUtils;
 import com.tyut.psychological.report.dto.CaseReportAdminQuery;
+import com.tyut.psychological.report.service.CaseReportExportService;
 import com.tyut.psychological.report.service.CaseReportService;
+import com.tyut.psychological.report.vo.CaseReportExportResult;
 import com.tyut.psychological.report.vo.CaseReportVO;
+import com.tyut.psychological.common.util.DownloadUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +25,12 @@ import java.time.LocalDate;
 @RequestMapping("/api/admin/case-reports")
 public class AdminCaseReportController {
     private final CaseReportService caseReportService;
+    private final CaseReportExportService caseReportExportService;
 
-    public AdminCaseReportController(CaseReportService caseReportService) {
+    public AdminCaseReportController(CaseReportService caseReportService,
+                                     CaseReportExportService caseReportExportService) {
         this.caseReportService = caseReportService;
+        this.caseReportExportService = caseReportExportService;
     }
 
     @GetMapping
@@ -54,5 +61,14 @@ public class AdminCaseReportController {
     public Result<CaseReportVO> getReport(@PathVariable Long id, HttpServletRequest request) {
         SessionUtils.requireAnyRole(SessionUtils.getRequiredCurrentUser(request), RoleCode.ADMIN);
         return Result.success(caseReportService.getDetailForAdmin(id));
+    }
+
+    @GetMapping("/{id}/export-word")
+    public void exportWord(@PathVariable Long id,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws Exception {
+        SessionUtils.requireAnyRole(SessionUtils.getRequiredCurrentUser(request), RoleCode.ADMIN);
+        CaseReportExportResult result = caseReportExportService.exportForAdmin(id);
+        DownloadUtils.writeAttachment(response, result.getFileName(), result.getContent());
     }
 }

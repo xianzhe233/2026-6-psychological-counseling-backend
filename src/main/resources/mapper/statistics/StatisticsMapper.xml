@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.statistics.mapper.StatisticsMapper">
+
+    <sql id="appointmentDateFilter">
+        <if test="query.startDate != null">
+            AND DATE(fva.create_time) &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND DATE(fva.create_time) &lt;= #{query.endDate}
+        </if>
+    </sql>
+
+    <sql id="queueDateFilter">
+        <if test="query.startDate != null">
+            AND DATE(cq.enqueue_time) &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND DATE(cq.enqueue_time) &lt;= #{query.endDate}
+        </if>
+        <if test="query.problemTypeId != null">
+            AND cq.problem_type_id = #{query.problemTypeId}
+        </if>
+    </sql>
+
+    <sql id="scheduleDateFilter">
+        <if test="query.startDate != null">
+            AND cs.consultation_date &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND cs.consultation_date &lt;= #{query.endDate}
+        </if>
+        <if test="query.counselorId != null">
+            AND cs.counselor_id = #{query.counselorId}
+        </if>
+        <if test="query.problemTypeId != null">
+            AND EXISTS (
+                SELECT 1 FROM consultation_queue cq
+                WHERE cq.student_id = cs.student_id
+                  AND cq.problem_type_id = #{query.problemTypeId}
+            )
+        </if>
+    </sql>
+
+    <sql id="caseReportDateFilter">
+        <if test="query.startDate != null">
+            AND DATE(cr.submit_time) &gt;= #{query.startDate}
+        </if>
+        <if test="query.endDate != null">
+            AND DATE(cr.submit_time) &lt;= #{query.endDate}
+        </if>
+        <if test="query.counselorId != null">
+            AND cr.counselor_id = #{query.counselorId}
+        </if>
+        <if test="query.problemTypeId != null">
+            AND cr.problem_type_id = #{query.problemTypeId}
+        </if>
+    </sql>
+
+    <select id="countFirstVisitAppointments" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment fva
+        WHERE 1 = 1
+        <include refid="appointmentDateFilter"/>
+    </select>
+
+    <select id="countPendingAppointments" resultType="long">
+        SELECT COUNT(*)
+        FROM first_visit_appointment fva
+        WHERE fva.appointment_status = 'PENDING'
+        <include refid="appointmentDateFilter"/>
+    </select>
+
+    <select id="countHighRiskStudents" resultType="long">
+        SELECT COUNT(DISTINCT cq.student_id)
+        FROM consultation_queue cq
+        WHERE cq.queue_status = 'WAITING'
+          AND cq.crisis_level IN ('HIGH', 'URGENT')
+        <include refid="queueDateFilter"/>
+    </select>
+
+    <select id="countWaitingQueue" resultType="long">
+        SELECT COUNT(*)
+        FROM consultation_queue cq
+        WHERE cq.queue_status = 'WAITING'
+        <include refid="queueDateFilter"/>
+    </select>
+
+    <select id="countConsultationSchedules" resultType="long">
+        SELECT COUNT(*)
+        FROM consultation_schedule cs
+        WHERE cs.schedule_status != 'CANCELED'
+        <include refid="scheduleDateFilter"/>
+    </select>
+
+    <select id="countClosedCases" resultType="long">
+        SELECT COUNT(*)
+        FROM case_report cr
+        WHERE cr.report_status = 'SUBMITTED'
+        <include refid="caseReportDateFilter"/>
+    </select>
+
+    <select id="countFirstVisitByMonth" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
+        SELECT DATE_FORMAT(fva.create_time, '%Y-%m') AS month, COUNT(*) AS count
+        FROM first_visit_appointment fva
+        WHERE 1 = 1
+        <include refid="appointmentDateFilter"/>
+        GROUP BY DATE_FORMAT(fva.create_time, '%Y-%m')
+        ORDER BY month
+    </select>
+
+    <select id="countConsultationByMonth" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
+        SELECT DATE_FORMAT(cs.consultation_date, '%Y-%m') AS month, COUNT(*) AS count
+        FROM consultation_schedule cs
+        WHERE cs.schedule_status != 'CANCELED'
+        <include refid="scheduleDateFilter"/>
+        GROUP BY DATE_FORMAT(cs.consultation_date, '%Y-%m')
+        ORDER BY month
+    </select>
+
+    <select id="countProblemTypes" resultType="com.tyut.psychological.statistics.vo.PieItemVO">
+        SELECT pt.type_name AS name, COUNT(*) AS value
+        FROM consultation_queue cq
+        LEFT JOIN problem_type pt ON cq.problem_type_id = pt.id
+        WHERE cq.queue_status IN ('WAITING', 'ARRANGED')
+        <include refid="queueDateFilter"/>
+        GROUP BY pt.type_name
+        ORDER BY value DESC
+    </select>
+
+    <select id="countCrisisLevels" resultType="com.tyut.psychological.statistics.vo.PieItemVO">
+        SELECT cq.crisis_level AS name, COUNT(*) AS value
+        FROM consultation_queue cq
+        WHERE cq.queue_status IN ('WAITING', 'ARRANGED')
+        <include refid="queueDateFilter"/>
+        GROUP BY cq.crisis_level
+        ORDER BY FIELD(cq.crisis_level, 'LOW', 'MEDIUM', 'HIGH', 'URGENT')
+    </select>
+
+    <select id="countCounselorWorkload" resultType="com.tyut.psychological.statistics.vo.CounselorWorkloadVO">
+        SELECT
+            su.real_name AS counselorName,
+            COUNT(cs.id) AS sessionCount,
+            COALESCE(SUM(TIMESTAMPDIFF(MINUTE, ts.start_time, ts.end_time)), 0) AS totalMinutes
+        FROM consultation_schedule cs
+        INNER JOIN staff_profile sp ON cs.counselor_id = sp.id
+        INNER JOIN sys_user su ON sp.user_id = su.id
+        LEFT JOIN time_slot ts ON cs.slot_id = ts.id
+        WHERE cs.schedule_status != 'CANCELED'
+        <include refid="scheduleDateFilter"/>
+        GROUP BY cs.counselor_id, su.real_name
+        ORDER BY sessionCount DESC
+    </select>
+</mapper>

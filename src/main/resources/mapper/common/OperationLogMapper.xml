@@ -14,4 +14,57 @@
         )
     </insert>
 
+    <sql id="adminOperationWhere">
+        WHERE 1 = 1
+        <if test="query.operatorName != null and query.operatorName != ''">
+            AND operator_name LIKE CONCAT('%', #{query.operatorName}, '%')
+        </if>
+        <if test="query.moduleName != null and query.moduleName != ''">
+            AND module_name = #{query.moduleName}
+        </if>
+        <if test="query.operationType != null and query.operationType != ''">
+            AND operation_type = #{query.operationType}
+        </if>
+        <if test="query.resultStatus != null and query.resultStatus != ''">
+            AND result_status = #{query.resultStatus}
+        </if>
+        <if test="query.startTime != null">
+            AND create_time &gt;= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND create_time &lt;= #{query.endTime}
+        </if>
+    </sql>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.common.log.vo.OperationLogVO">
+        SELECT
+            id,
+            operator_name AS operatorName,
+            CASE role_code
+                WHEN 'ADMIN' THEN '管理员'
+                WHEN 'ASSISTANT' THEN '心理助理'
+                WHEN 'COUNSELOR' THEN '咨询师'
+                WHEN 'INTERVIEWER' THEN '初访员'
+                WHEN 'STUDENT' THEN '学生'
+                ELSE role_code
+            END AS roleName,
+            module_name AS moduleName,
+            operation_type AS operationType,
+            operation_desc AS description,
+            result_status AS resultStatus,
+            COALESCE(execution_time, 0) AS durationMs,
+            ip_address AS ipAddress,
+            create_time AS operateTime
+        FROM operation_log
+        <include refid="adminOperationWhere"/>
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM operation_log
+        <include refid="adminOperationWhere"/>
+    </select>
+
 </mapper>

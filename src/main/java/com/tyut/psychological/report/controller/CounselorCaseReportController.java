@@ -6,8 +6,12 @@ import com.tyut.psychological.common.enums.RoleCode;
 import com.tyut.psychological.common.util.SessionUtils;
 import com.tyut.psychological.report.dto.CaseReportQuery;
 import com.tyut.psychological.report.dto.CaseReportRequest;
+import com.tyut.psychological.report.service.CaseReportExportService;
 import com.tyut.psychological.report.service.CaseReportService;
+import com.tyut.psychological.report.vo.CaseReportExportResult;
 import com.tyut.psychological.report.vo.CaseReportVO;
+import com.tyut.psychological.common.util.DownloadUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/counselor/case-reports")
 public class CounselorCaseReportController {
     private final CaseReportService caseReportService;
+    private final CaseReportExportService caseReportExportService;
 
-    public CounselorCaseReportController(CaseReportService caseReportService) {
+    public CounselorCaseReportController(CaseReportService caseReportService,
+                                         CaseReportExportService caseReportExportService) {
         this.caseReportService = caseReportService;
+        this.caseReportExportService = caseReportExportService;
     }
 
     @GetMapping
@@ -74,5 +81,15 @@ public class CounselorCaseReportController {
         Long counselorUserId = SessionUtils.getRequiredCurrentUser(request).getId();
         SessionUtils.requireAnyRole(SessionUtils.getRequiredCurrentUser(request), RoleCode.COUNSELOR);
         return Result.success(caseReportService.submit(counselorUserId, id));
+    }
+
+    @GetMapping("/{id}/export-word")
+    public void exportWord(@PathVariable Long id,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws Exception {
+        Long counselorUserId = SessionUtils.getRequiredCurrentUser(request).getId();
+        SessionUtils.requireAnyRole(SessionUtils.getRequiredCurrentUser(request), RoleCode.COUNSELOR);
+        CaseReportExportResult result = caseReportExportService.exportForCounselor(counselorUserId, id);
+        DownloadUtils.writeAttachment(response, result.getFileName(), result.getContent());
     }
 }

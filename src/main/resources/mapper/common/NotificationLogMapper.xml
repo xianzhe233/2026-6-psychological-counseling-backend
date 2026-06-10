@@ -31,4 +31,50 @@
         WHERE receiver_user_id = #{studentId}
     </select>
 
+    <sql id="adminNotificationWhere">
+        WHERE 1 = 1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (
+                receiver_name LIKE CONCAT('%', #{query.keyword}, '%')
+                OR phone LIKE CONCAT('%', #{query.keyword}, '%')
+                OR title LIKE CONCAT('%', #{query.keyword}, '%')
+                OR content LIKE CONCAT('%', #{query.keyword}, '%')
+            )
+        </if>
+        <if test="query.notifyType != null and query.notifyType != ''">
+            AND notify_type = #{query.notifyType}
+        </if>
+        <if test="query.sendStatus != null and query.sendStatus != ''">
+            AND send_status = #{query.sendStatus}
+        </if>
+        <if test="query.startTime != null">
+            AND send_time &gt;= #{query.startTime}
+        </if>
+        <if test="query.endTime != null">
+            AND send_time &lt;= #{query.endTime}
+        </if>
+    </sql>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.common.notification.vo.NotificationLogVO">
+        SELECT
+            id,
+            receiver_name AS receiverName,
+            phone AS receiverPhone,
+            notify_type AS notifyType,
+            title,
+            content,
+            send_status AS sendStatus,
+            send_time AS sendTime
+        FROM notification_log
+        <include refid="adminNotificationWhere"/>
+        ORDER BY send_time DESC, id DESC
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_log
+        <include refid="adminNotificationWhere"/>
+    </select>
+
 </mapper>
