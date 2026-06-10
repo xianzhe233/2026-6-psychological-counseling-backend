@@ -49,6 +49,8 @@
             sp.student_no AS studentNo,
             sp.college,
             COALESCE(sp.contact_phone, su.phone) AS phone,
+            cr.counselor_id AS counselorId,
+            counselor_su.real_name AS counselorName,
             cr.problem_type_id AS problemTypeId,
             pt.type_name AS problemTypeLabel,
             cr.total_sessions AS totalSessions,
@@ -63,6 +65,8 @@
         FROM case_report cr
         LEFT JOIN sys_user su ON cr.student_id = su.id
         LEFT JOIN student_profile sp ON su.id = sp.user_id
+        LEFT JOIN staff_profile counselor_sp ON cr.counselor_id = counselor_sp.id
+        LEFT JOIN sys_user counselor_su ON counselor_sp.user_id = counselor_su.id
         LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
     </sql>
 

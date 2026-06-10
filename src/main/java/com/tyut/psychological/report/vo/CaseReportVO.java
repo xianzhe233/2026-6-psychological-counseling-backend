@@ -10,6 +10,8 @@ public class CaseReportVO {
     private String studentNo;
     private String college;
     private String phone;
+    private Long counselorId;
+    private String counselorName;
     private Long problemTypeId;
     private String problemTypeLabel;
     private Integer totalSessions;
@@ -36,6 +38,10 @@ public class CaseReportVO {
     public void setCollege(String college) { this.college = college; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public Long getCounselorId() { return counselorId; }
+    public void setCounselorId(Long counselorId) { this.counselorId = counselorId; }
+    public String getCounselorName() { return counselorName; }
+    public void setCounselorName(String counselorName) { this.counselorName = counselorName; }
     public Long getProblemTypeId() { return problemTypeId; }
     public void setProblemTypeId(Long problemTypeId) { this.problemTypeId = problemTypeId; }
     public String getProblemTypeLabel() { return problemTypeLabel; }
