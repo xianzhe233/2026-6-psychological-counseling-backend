@@ -24,7 +24,7 @@
 - qxz 对阶段4的 review 修复；
 - 支撑 lcw 学生端阶段2/3所需的最小学生接口（首访登记表 / 知情同意书）。
 
-当前已可基于 MySQL 初始化项目数据库，完成数据库认证，并支撑管理员基础管理页面与学生“首访登记表 → 知情同意书”最小链路联调。
+当前已可基于 MySQL 初始化项目数据库，完成数据库认证，并支撑管理员基础管理页面与学生"首访登记表 → 知情同意书"最小链路联调。
 
 ## 2026-06-07 整理并接入 ltb 阶段5后端接口
 
@@ -428,8 +428,8 @@
 ### 完成内容
 
 - review 刚合入的咨询队列/咨询安排代码后，修复分页 SQL 中直接拼接 `OFFSET` 的写法，改为参数化 offset，避免注入与分页边界问题。
-- 补强心理助理身份校验：除“存在且启用”外，进一步要求 `staffType=ASSISTANT`，避免其他工作人员越权安排或取消咨询。
-- 为咨询安排服务补充单元测试，覆盖“非助理账号不可安排咨询”和“助理校验通过后继续做时间段存在性校验”两类场景。
+- 补强心理助理身份校验：除"存在且启用"外，进一步要求 `staffType=ASSISTANT`，避免其他工作人员越权安排或取消咨询。
+- 为咨询安排服务补充单元测试，覆盖"非助理账号不可安排咨询"和"助理校验通过后继续做时间段存在性校验"两类场景。
 
 ### 影响文件
 
@@ -447,7 +447,7 @@
 
 ### 遗留问题
 
-- `GET /api/assistant/counselors/available-slots` 当前只按单日 `startDate` 查询；若后续前端需要“从起始日向后看多日可约时间”，需再扩展接口语义与实现。
+- `GET /api/assistant/counselors/available-slots` 当前只按单日 `startDate` 查询；若后续前端需要"从起始日向后看多日可约时间"，需再扩展接口语义与实现。
 
 ---
 
@@ -578,9 +578,9 @@
 
 ### 完成内容
 
-- 复核 `ltb` 合入的初访员模块后，补强初访员身份校验：除“存在且角色为 INTERVIEWER”外，进一步要求工作人员状态为启用，避免停用账号继续访问任务或提交结果。
+- 复核 `ltb` 合入的初访员模块后，补强初访员身份校验：除"存在且角色为 INTERVIEWER"外，进一步要求工作人员状态为启用，避免停用账号继续访问任务或提交结果。
 - 为初访任务分页增加页码与页大小的兜底处理，避免非法分页参数触发内存分页边界异常。
-- 为 `InterviewerService` 补充单元测试，覆盖“停用初访员不可访问任务列表”和“非法分页参数自动归一化”两个场景，并同步修正既有测试数据使其符合启用校验。
+- 为 `InterviewerService` 补充单元测试，覆盖"停用初访员不可访问任务列表"和"非法分页参数自动归一化"两个场景，并同步修正既有测试数据使其符合启用校验。
 
 ### 影响文件
 
@@ -598,7 +598,7 @@
 
 ### 遗留问题
 
-- 初访任务列表当前仍采用“先查全量再内存分页”的实现；当前数据量下可用，若后续演示数据增多，建议下沉到 SQL 分页。
+- 初访任务列表当前仍采用"先查全量再内存分页"的实现；当前数据量下可用，若后续演示数据增多，建议下沉到 SQL 分页。
 - 初访结果提交后通知日志未记录，后续可按业务需要补充。
 
 ---
@@ -667,8 +667,8 @@
 ### 完成内容
 
 - 复核 zyt 阶段5后端代码后，修复咨询师日程、追加申请、结案报告分页 SQL 中重新出现的 `${...}` 偏移量拼接，统一改回参数化 `offset`，避免注入风险与非法分页边界问题回归。
-- 补强追加咨询申请审核规则：管理员驳回时要求 `reason` 必填，避免出现“驳回成功但无原因”的无效审核记录。
-- 为 `ExtensionRequestService` 补充单元测试，覆盖“驳回原因必填”和“非法分页参数自动归一化”两个场景。
+- 补强追加咨询申请审核规则：管理员驳回时要求 `reason` 必填，避免出现"驳回成功但无原因"的无效审核记录。
+- 为 `ExtensionRequestService` 补充单元测试，覆盖"驳回原因必填"和"非法分页参数自动归一化"两个场景。
 
 ### 影响文件
 
@@ -730,7 +730,7 @@
 
 ### 完成内容
 
-- 调整学生通知查询 SQL，修复“我的通知”页面查询异常
+- 调整学生通知查询 SQL，修复"我的通知"页面查询异常
 - 同步更新后端进度记录
 
 ### 影响文件
@@ -815,7 +815,7 @@
 
 ### 完成内容
 
-- 在同步 `dev` 并复核 lcw 已合入 PR 后，继续检查学生端接口，发现“我的预约”和“我的通知”仍采用内存分页，`pageNum/pageSize` 传入 0 或负数时会直接触发 `subList` 边界异常。
+- 在同步 `dev` 并复核 lcw 已合入 PR 后，继续检查学生端接口，发现"我的预约"和"我的通知"仍采用内存分页，`pageNum/pageSize` 传入 0 或负数时会直接触发 `subList` 边界异常。
 - 为 `StudentAppointmentService` 增加分页参数归一化逻辑，将非法页码统一回落到 `pageNum=1`、`pageSize=10`，避免坏参数导致 500。
 - 新增 `StudentAppointmentServiceTest`，覆盖学生预约分页与通知分页两处负参数场景，防止后续回归。
 
@@ -836,4 +836,35 @@
 
 ### 遗留问题
 
-- 学生预约与通知列表当前仍采用“先查全量再内存分页”的实现；当前数据量下可用，若后续演示数据继续增大，建议下沉为 SQL 分页。
+- 学生预约与通知列表当前仍采用"先查全量再内存分页"的实现；当前数据量下可用，若后续演示数据继续增大，建议下沉为 SQL 分页。
+
+---
+
+## 2026-06-10 zyt 阶段6：Word 导出与统计接口（减重优化版）
+
+### 完成内容
+
+- 新增 Word 导出模块：`CaseReportExportVO`、`CaseReportExportService`（含 `fetchForCounselor`/`fetchForAdmin`/`buildWord`/`logExport`）、`DownloadUtils`、POI 依赖 5.4.1
+  - `GET /api/counselor/case-reports/{id}/export-word`
+  - `GET /api/admin/case-reports/{id}/export-word`
+- 新增统计模块：`ChartVO`（合并 BarChartVO/LineChartVO）、`StatisticsMapper`/`StatisticsService`/`StatisticsController` 共 8 个端点
+- 新增日志分页：`AdminLogController` 直接注入 Mapper，2 个分页端点
+- 扩展 `CaseReportMapper` 增加导出查询
+- 减重：去除 `CaseReportExportResult`、`AdminLogService` 冗余类
+
+### 影响文件（关键）
+
+- `pom.xml`、`DownloadUtils.java`（新增）
+- `report/`: `CaseReportExportVO.java`、`CaseReportExportService.java`、两个 Controller 增 `exportWord` 端点、`CaseReportMapper` + XML 增导出查询
+- `statistics/`: `StatisticsQuery`、`ChartVO`/`ChartSeriesVO`/`OverviewStatsVO`/`MonthCountVO`/`PieItemVO`/`CounselorWorkloadVO`、`StatisticsMapper` + XML、`StatisticsService`、`StatisticsController`
+- `common/`: `NotificationLogVO`/`NotificationLogQuery`、`OperationLogVO`/`OperationLogQuery`、扩展 `NotificationLogMapper`/`OperationLogMapper` + XML、`AdminLogController`
+- `docs/progress.md`
+
+### 接口变化
+
+新增 12 个 REST 端点（2 导出 + 8 统计 + 2 日志分页），无破坏性变更。
+
+### 验证方式
+
+- 本地需 JDK 21 环境，执行 `./mvnw compile` 验证编译通过
+- 联调需配合前端调用新增端点

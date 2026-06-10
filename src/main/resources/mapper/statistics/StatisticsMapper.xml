@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.statistics.mapper.StatisticsMapper">
+
+    <sql id="dateRange">
+        <if test="q.startDate != null">AND DATE(create_time) &gt;= #{q.startDate}</if>
+        <if test="q.endDate != null">AND DATE(create_time) &lt;= #{q.endDate}</if>
+    </sql>
+
+    <select id="overview" resultType="com.tyut.psychological.statistics.vo.OverviewStatsVO">
+        SELECT
+            (SELECT COUNT(*) FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>) AS totalConsultations,
+            (SELECT COUNT(DISTINCT student_id) FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>) AS totalStudents,
+            (SELECT COUNT(*) FROM case_report WHERE report_status = 'SUBMITTED' <include refid="dateRange"/>) AS completedReports,
+            (SELECT COUNT(DISTINCT cs.counselor_id)
+             FROM consultation_schedule cs
+             JOIN staff_profile sp ON cs.counselor_id = sp.id
+             WHERE cs.create_time IS NOT NULL
+             <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
+             <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>
+            ) AS activeCounselors
+    </select>
+
+    <select id="monthlyConsultations" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m') AS month,
+               COUNT(*) AS count
+        FROM consultation_schedule
+        WHERE 1=1 <include refid="dateRange"/>
+        GROUP BY month ORDER BY month
+    </select>
+
+    <select id="monthlyReports" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
+        SELECT DATE_FORMAT(submit_time, '%Y-%m') AS month,
+               COUNT(*) AS count
+        FROM case_report
+        WHERE report_status = 'SUBMITTED' <include refid="dateRange"/>
+        GROUP BY month ORDER BY month
+    </select>
+
+    <select id="monthlyNewStudents" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
+        SELECT DATE_FORMAT(MIN(cs.create_time), '%Y-%m') AS month,
+               COUNT(*) AS count
+        FROM (
+            SELECT student_id, MIN(create_time) AS first_time
+            FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>
+            GROUP BY student_id
+        ) sub
+        JOIN consultation_schedule cs ON sub.student_id = cs.student_id AND sub.first_time = cs.create_time
+        GROUP BY DATE_FORMAT(cs.create_time, '%Y-%m')
+        ORDER BY month
+    </select>
+
+    <select id="consultationDistribution" resultType="com.tyut.psychological.statistics.vo.PieItemVO">
+        SELECT sp.college AS name,
+               COUNT(*) AS value
+        FROM consultation_schedule cs
+        LEFT JOIN student_profile sp ON cs.student_id = sp.id
+        WHERE 1=1
+        <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
+        <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>
+        GROUP BY sp.college ORDER BY value DESC
+    </select>
+
+    <select id="problemTypeDistribution" resultType="com.tyut.psychological.statistics.vo.PieItemVO">
+        SELECT pt.type_name AS name,
+               COUNT(*) AS value
+        FROM case_report cr
+        LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
+        WHERE cr.report_status = 'SUBMITTED' <include refid="dateRange"/>
+        GROUP BY pt.type_name ORDER BY value DESC
+    </select>
+
+    <select id="counselorWorkload" resultType="com.tyut.psychological.statistics.vo.CounselorWorkloadVO">
+        SELECT cs.counselor_id AS counselorId,
+               su.real_name AS counselorName,
+               COUNT(*) AS consultationCount,
+               COUNT(DISTINCT cs.student_id) AS studentCount,
+               COUNT(DISTINCT cr.id) AS reportCount
+        FROM consultation_schedule cs
+        LEFT JOIN sys_user su ON cs.counselor_id = su.id
+        LEFT JOIN case_report cr ON cs.counselor_id = cr.counselor_id AND cr.report_status = 'SUBMITTED'
+        WHERE 1=1
+        <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
+        <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>
+        GROUP BY cs.counselor_id, su.real_name ORDER BY consultationCount DESC
+    </select>
+
+</mapper>
