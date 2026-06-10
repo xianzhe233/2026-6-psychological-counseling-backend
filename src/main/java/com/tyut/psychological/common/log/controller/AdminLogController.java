@@ -60,6 +60,7 @@ public class AdminLogController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String operationType,
+            @RequestParam(required = false) String moduleName,
             @RequestParam(required = false) String resultStatus,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
@@ -68,7 +69,7 @@ public class AdminLogController {
         SessionUtils.requireAnyRole(SessionUtils.getRequiredCurrentUser(request), RoleCode.ADMIN);
         OperationLogQuery q = new OperationLogQuery();
         q.setPageNum(pageNum); q.setPageSize(pageSize);
-        q.setOperationType(operationType); q.setResultStatus(resultStatus);
+        q.setOperationType(operationType); q.setModuleName(moduleName); q.setResultStatus(resultStatus);
         q.setKeyword(keyword); q.setStartTime(startTime); q.setEndTime(endTime);
         List<OperationLogVO> list = operationLogMapper.pageForAdmin(q);
         long total = operationLogMapper.countForAdmin(q);
