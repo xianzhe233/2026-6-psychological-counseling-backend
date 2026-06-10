@@ -97,6 +97,12 @@
         <if test="status != null and status != ''">
             AND fva.appointment_status = #{status}
         </if>
+        <if test="startDate != null">
+            AND fva.appointment_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND fva.appointment_date &lt;= #{endDate}
+        </if>
         ORDER BY fva.create_time DESC
     </select>
 
@@ -106,6 +112,12 @@
         WHERE student_id = #{studentId}
         <if test="status != null and status != ''">
             AND appointment_status = #{status}
+        </if>
+        <if test="startDate != null">
+            AND appointment_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND appointment_date &lt;= #{endDate}
         </if>
     </select>
 

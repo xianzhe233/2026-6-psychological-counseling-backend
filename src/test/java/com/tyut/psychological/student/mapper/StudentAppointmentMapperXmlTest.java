@@ -20,4 +20,12 @@ class StudentAppointmentMapperXmlTest {
         assertTrue(xml.contains("receiver_user_id = #{studentId}"), "通知查询应按 receiver_user_id 过滤");
         assertTrue(!xml.contains("WHERE user_id = #{studentId}"), "通知查询不应回退为不存在的 user_id 字段");
     }
+
+    @Test
+    void studentAppointmentsQueryShouldSupportDateRangeFilter() throws IOException {
+        String xml = Files.readString(Path.of("src/main/resources/mapper/student/StudentAppointmentMapper.xml"));
+
+        assertTrue(xml.contains("appointment_date &gt;= #{startDate}"), "预约查询应支持开始日期筛选");
+        assertTrue(xml.contains("appointment_date &lt;= #{endDate}"), "预约查询应支持结束日期筛选");
+    }
 }

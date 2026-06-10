@@ -25,17 +25,27 @@ public interface StudentAppointmentMapper {
      * 查询学生预约列表
      * @param studentId 学生ID
      * @param status 预约状态（可选）
+     * @param startDate 开始日期（可选）
+     * @param endDate 结束日期（可选）
      * @return 预约列表
      */
-    List<MyAppointmentVO> selectStudentAppointments(@Param("studentId") Long studentId, @Param("status") String status);
+    List<MyAppointmentVO> selectStudentAppointments(@Param("studentId") Long studentId,
+                                                    @Param("status") String status,
+                                                    @Param("startDate") LocalDate startDate,
+                                                    @Param("endDate") LocalDate endDate);
 
     /**
      * 统计学生预约数量
      * @param studentId 学生ID
      * @param status 预约状态（可选）
+     * @param startDate 开始日期（可选）
+     * @param endDate 结束日期（可选）
      * @return 预约数量
      */
-    long countStudentAppointments(@Param("studentId") Long studentId, @Param("status") String status);
+    long countStudentAppointments(@Param("studentId") Long studentId,
+                                  @Param("status") String status,
+                                  @Param("startDate") LocalDate startDate,
+                                  @Param("endDate") LocalDate endDate);
 
     /**
      * 查询学生通知列表
