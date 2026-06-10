@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static java.lang.Math.ceil;
+
 @RestController
 @RequestMapping("/api/admin/logs")
 public class AdminLogController {
@@ -49,7 +51,8 @@ public class AdminLogController {
         q.setKeyword(keyword); q.setStartTime(startTime); q.setEndTime(endTime);
         List<NotificationLogVO> list = notificationLogMapper.pageForAdmin(q);
         long total = notificationLogMapper.countForAdmin(q);
-        return Result.success(new PageResult<>(pageNum, pageSize, total, list));
+        long pages = pageSize == null || pageSize <= 0 ? 0 : (long) ceil((double) total / pageSize);
+        return Result.success(new PageResult<>(list, total, pageNum, pageSize, pages));
     }
 
     @GetMapping("/operations")
@@ -69,6 +72,7 @@ public class AdminLogController {
         q.setKeyword(keyword); q.setStartTime(startTime); q.setEndTime(endTime);
         List<OperationLogVO> list = operationLogMapper.pageForAdmin(q);
         long total = operationLogMapper.countForAdmin(q);
-        return Result.success(new PageResult<>(pageNum, pageSize, total, list));
+        long pages = pageSize == null || pageSize <= 0 ? 0 : (long) ceil((double) total / pageSize);
+        return Result.success(new PageResult<>(list, total, pageNum, pageSize, pages));
     }
 }

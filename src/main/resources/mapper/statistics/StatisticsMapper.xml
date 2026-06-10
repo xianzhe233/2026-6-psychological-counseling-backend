@@ -2,16 +2,21 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.tyut.psychological.statistics.mapper.StatisticsMapper">
 
-    <sql id="dateRange">
+    <sql id="scheduleDateRange">
         <if test="q.startDate != null">AND DATE(create_time) &gt;= #{q.startDate}</if>
         <if test="q.endDate != null">AND DATE(create_time) &lt;= #{q.endDate}</if>
     </sql>
 
+    <sql id="reportSubmitDateRange">
+        <if test="q.startDate != null">AND DATE(submit_time) &gt;= #{q.startDate}</if>
+        <if test="q.endDate != null">AND DATE(submit_time) &lt;= #{q.endDate}</if>
+    </sql>
+
     <select id="overview" resultType="com.tyut.psychological.statistics.vo.OverviewStatsVO">
         SELECT
-            (SELECT COUNT(*) FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>) AS totalConsultations,
-            (SELECT COUNT(DISTINCT student_id) FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>) AS totalStudents,
-            (SELECT COUNT(*) FROM case_report WHERE report_status = 'SUBMITTED' <include refid="dateRange"/>) AS completedReports,
+            (SELECT COUNT(*) FROM consultation_schedule WHERE 1=1 <include refid="scheduleDateRange"/>) AS totalConsultations,
+            (SELECT COUNT(DISTINCT student_id) FROM consultation_schedule WHERE 1=1 <include refid="scheduleDateRange"/>) AS totalStudents,
+            (SELECT COUNT(*) FROM case_report WHERE report_status = 'SUBMITTED' <include refid="reportSubmitDateRange"/>) AS completedReports,
             (SELECT COUNT(DISTINCT cs.counselor_id)
              FROM consultation_schedule cs
              JOIN staff_profile sp ON cs.counselor_id = sp.id
@@ -25,7 +30,7 @@
         SELECT DATE_FORMAT(create_time, '%Y-%m') AS month,
                COUNT(*) AS count
         FROM consultation_schedule
-        WHERE 1=1 <include refid="dateRange"/>
+        WHERE 1=1 <include refid="scheduleDateRange"/>
         GROUP BY month ORDER BY month
     </select>
 
@@ -33,20 +38,22 @@
         SELECT DATE_FORMAT(submit_time, '%Y-%m') AS month,
                COUNT(*) AS count
         FROM case_report
-        WHERE report_status = 'SUBMITTED' <include refid="dateRange"/>
+        WHERE report_status = 'SUBMITTED' <include refid="reportSubmitDateRange"/>
         GROUP BY month ORDER BY month
     </select>
 
     <select id="monthlyNewStudents" resultType="com.tyut.psychological.statistics.vo.MonthCountVO">
-        SELECT DATE_FORMAT(MIN(cs.create_time), '%Y-%m') AS month,
+        SELECT DATE_FORMAT(sub.first_time, '%Y-%m') AS month,
                COUNT(*) AS count
         FROM (
             SELECT student_id, MIN(create_time) AS first_time
-            FROM consultation_schedule WHERE 1=1 <include refid="dateRange"/>
+            FROM consultation_schedule
             GROUP BY student_id
         ) sub
-        JOIN consultation_schedule cs ON sub.student_id = cs.student_id AND sub.first_time = cs.create_time
-        GROUP BY DATE_FORMAT(cs.create_time, '%Y-%m')
+        WHERE 1=1
+        <if test="q.startDate != null">AND DATE(sub.first_time) &gt;= #{q.startDate}</if>
+        <if test="q.endDate != null">AND DATE(sub.first_time) &lt;= #{q.endDate}</if>
+        GROUP BY DATE_FORMAT(sub.first_time, '%Y-%m')
         ORDER BY month
     </select>
 
@@ -66,23 +73,38 @@
                COUNT(*) AS value
         FROM case_report cr
         LEFT JOIN problem_type pt ON cr.problem_type_id = pt.id
-        WHERE cr.report_status = 'SUBMITTED' <include refid="dateRange"/>
+        WHERE cr.report_status = 'SUBMITTED' <include refid="reportSubmitDateRange"/>
         GROUP BY pt.type_name ORDER BY value DESC
     </select>
 
     <select id="counselorWorkload" resultType="com.tyut.psychological.statistics.vo.CounselorWorkloadVO">
-        SELECT cs.counselor_id AS counselorId,
-               su.real_name AS counselorName,
-               COUNT(*) AS consultationCount,
-               COUNT(DISTINCT cs.student_id) AS studentCount,
-               COUNT(DISTINCT cr.id) AS reportCount
-        FROM consultation_schedule cs
-        LEFT JOIN sys_user su ON cs.counselor_id = su.id
-        LEFT JOIN case_report cr ON cs.counselor_id = cr.counselor_id AND cr.report_status = 'SUBMITTED'
-        WHERE 1=1
-        <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
-        <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>
-        GROUP BY cs.counselor_id, su.real_name ORDER BY consultationCount DESC
+        SELECT sa.counselorId,
+               sa.counselorName,
+               sa.consultationCount,
+               sa.studentCount,
+               COALESCE(ra.reportCount, 0) AS reportCount
+        FROM (
+            SELECT cs.counselor_id AS counselorId,
+                   su.real_name AS counselorName,
+                   COUNT(DISTINCT cs.id) AS consultationCount,
+                   COUNT(DISTINCT cs.student_id) AS studentCount
+            FROM consultation_schedule cs
+            LEFT JOIN sys_user su ON cs.counselor_id = su.id
+            WHERE 1=1
+            <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
+            <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>
+            GROUP BY cs.counselor_id, su.real_name
+        ) sa
+        LEFT JOIN (
+            SELECT cr.counselor_id AS counselorId,
+                   COUNT(*) AS reportCount
+            FROM case_report cr
+            WHERE cr.report_status = 'SUBMITTED'
+            <if test="q.startDate != null">AND DATE(cr.submit_time) &gt;= #{q.startDate}</if>
+            <if test="q.endDate != null">AND DATE(cr.submit_time) &lt;= #{q.endDate}</if>
+            GROUP BY cr.counselor_id
+        ) ra ON sa.counselorId = ra.counselorId
+        ORDER BY sa.consultationCount DESC, sa.counselorId ASC
     </select>
 
 </mapper>
