@@ -16,7 +16,7 @@ class AdminLogQueryTest {
 
         assertEquals(1, query.getPageNum());
         assertEquals(10, query.getPageSize());
-        assertEquals(0, query.offset());
+        assertEquals(0, query.getOffset());
     }
 
     @Test
@@ -28,6 +28,6 @@ class AdminLogQueryTest {
 
         assertEquals(1, query.getPageNum());
         assertEquals(10, query.getPageSize());
-        assertEquals(0, query.offset());
+        assertEquals(0, query.getOffset());
     }
 }
