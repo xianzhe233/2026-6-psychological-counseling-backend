@@ -139,17 +139,18 @@ public class StudentAppointmentService {
     public PageResult<MyAppointmentVO> getMyAppointments(CurrentUserVO user, String status, Integer pageNum, Integer pageSize) {
         requireStudent(user);
         Long studentId = user.getId();
+        int safePageNum = normalizePageNum(pageNum);
+        int safePageSize = normalizePageSize(pageSize);
 
         List<MyAppointmentVO> records = studentAppointmentMapper.selectStudentAppointments(studentId, status);
         long total = studentAppointmentMapper.countStudentAppointments(studentId, status);
 
-        // 内存分页
-        int from = (pageNum - 1) * pageSize;
-        int to = Math.min(from + pageSize, records.size());
+        int from = (safePageNum - 1) * safePageSize;
+        int to = Math.min(from + safePageSize, records.size());
         List<MyAppointmentVO> page = from < records.size() ? records.subList(from, to) : List.of();
-        long pages = (total + pageSize - 1) / pageSize;
+        long pages = (total + safePageSize - 1) / safePageSize;
 
-        return new PageResult<>(page, total, pageNum, pageSize, pages);
+        return new PageResult<>(page, total, safePageNum, safePageSize, pages);
     }
 
     /**
@@ -211,23 +212,32 @@ public class StudentAppointmentService {
     public PageResult<MyNotificationVO> getMyNotifications(CurrentUserVO user, String notifyType, Integer pageNum, Integer pageSize) {
         requireStudent(user);
         Long studentId = user.getId();
+        int safePageNum = normalizePageNum(pageNum);
+        int safePageSize = normalizePageSize(pageSize);
 
         List<MyNotificationVO> records = studentAppointmentMapper.selectStudentNotifications(studentId, notifyType);
         long total = studentAppointmentMapper.countStudentNotifications(studentId, notifyType);
 
-        // 内存分页
-        int from = (pageNum - 1) * pageSize;
-        int to = Math.min(from + pageSize, records.size());
+        int from = (safePageNum - 1) * safePageSize;
+        int to = Math.min(from + safePageSize, records.size());
         List<MyNotificationVO> page = from < records.size() ? records.subList(from, to) : List.of();
-        long pages = (total + pageSize - 1) / pageSize;
+        long pages = (total + safePageSize - 1) / safePageSize;
 
-        return new PageResult<>(page, total, pageNum, pageSize, pages);
+        return new PageResult<>(page, total, safePageNum, safePageSize, pages);
     }
 
     private void requireStudent(CurrentUserVO user) {
         if (user == null || user.getRoles() == null || !user.getRoles().contains(RoleCode.STUDENT)) {
             throw new BusinessException(403, "当前角色无权访问");
         }
+    }
+
+    private int normalizePageNum(Integer pageNum) {
+        return pageNum == null || pageNum < 1 ? 1 : pageNum;
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        return pageSize == null || pageSize < 1 ? 10 : pageSize;
     }
 
     private String generateAppointmentNo(LocalDate appointmentDate) {
