@@ -89,7 +89,8 @@
                    COUNT(DISTINCT cs.id) AS consultationCount,
                    COUNT(DISTINCT cs.student_id) AS studentCount
             FROM consultation_schedule cs
-            LEFT JOIN sys_user su ON cs.counselor_id = su.id
+            LEFT JOIN staff_profile sp ON cs.counselor_id = sp.id
+            LEFT JOIN sys_user su ON sp.user_id = su.id
             WHERE 1=1
             <if test="q.startDate != null">AND DATE(cs.create_time) &gt;= #{q.startDate}</if>
             <if test="q.endDate != null">AND DATE(cs.create_time) &lt;= #{q.endDate}</if>

@@ -51,8 +51,8 @@ public class AdminLogController {
         q.setKeyword(keyword); q.setStartTime(startTime); q.setEndTime(endTime);
         List<NotificationLogVO> list = notificationLogMapper.pageForAdmin(q);
         long total = notificationLogMapper.countForAdmin(q);
-        long pages = pageSize == null || pageSize <= 0 ? 0 : (long) ceil((double) total / pageSize);
-        return Result.success(new PageResult<>(list, total, pageNum, pageSize, pages));
+        long pages = (long) ceil((double) total / q.getPageSize());
+        return Result.success(new PageResult<>(list, total, q.getPageNum(), q.getPageSize(), pages));
     }
 
     @GetMapping("/operations")
@@ -72,7 +72,7 @@ public class AdminLogController {
         q.setKeyword(keyword); q.setStartTime(startTime); q.setEndTime(endTime);
         List<OperationLogVO> list = operationLogMapper.pageForAdmin(q);
         long total = operationLogMapper.countForAdmin(q);
-        long pages = pageSize == null || pageSize <= 0 ? 0 : (long) ceil((double) total / pageSize);
-        return Result.success(new PageResult<>(list, total, pageNum, pageSize, pages));
+        long pages = (long) ceil((double) total / q.getPageSize());
+        return Result.success(new PageResult<>(list, total, q.getPageNum(), q.getPageSize(), pages));
     }
 }

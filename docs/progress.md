@@ -18,13 +18,15 @@
 
 ### 当前状态
 
-后端仓库当前 `dev` 基线已完成：
-- 最小可启动骨架；
-- ltb 阶段4基础信息接口；
-- qxz 对阶段4的 review 修复；
-- 支撑 lcw 学生端阶段2/3所需的最小学生接口（首访登记表 / 知情同意书）。
+后端仓库当前 `dev-qxz` 基线已完成：
+- Spring Boot + MyBatis + MySQL + Session 基础骨架和数据库认证；
+- 管理员用户、工作人员、咨询室、时间段、值班、初访预约审核接口；
+- 学生首访登记、知情同意、初访预约、我的预约、我的通知接口；
+- 初访员任务、初访结果提交、自动进入咨询队列接口；
+- 心理助理咨询队列、正式咨询安排、三方冲突检测接口；
+- 咨询师日程、咨询记录、追加申请、结案报告、Word 导出、统计与日志分页接口。
 
-当前已可基于 MySQL 初始化项目数据库，完成数据库认证，并支撑管理员基础管理页面与学生"首访登记表 → 知情同意书"最小链路联调。
+当前后端已可支撑主要演示链路和增强接口；剩余重点是前端后半段 mock API 切换真实接口、演示数据脚本完善、截图与交付材料补齐。
 
 ## 2026-06-07 整理并接入 ltb 阶段5后端接口
 
@@ -868,3 +870,34 @@
 
 - 本地需 JDK 21 环境，执行 `./mvnw compile` 验证编译通过
 - 联调需配合前端调用新增端点
+---
+
+## 2026-06-10 qxz 整体 review 修复：统计与日志收尾
+
+### 完成内容
+
+- 清理后端仓库根目录误生成的 0 字节空文件，避免污染提交与源码交付包。
+- 修复统计工作量 SQL：`consultation_schedule.counselor_id` 是 `staff_profile.id`，现改为先关联 `staff_profile` 再关联 `sys_user` 获取咨询师姓名，避免统计归属错误。
+- 补充 `StatisticsMapperXmlTest` 资源级回归测试，防止后续再次把 `staff_profile.id` 当成 `sys_user.id` 使用。
+- 补强通知日志与操作日志分页参数健壮性，非法 `pageNum/pageSize` 自动回落到 `1/10`，避免负 OFFSET 或空指针导致 500。
+- 同步更新 `docs/api.md`：统计接口路径、返回字段和日志查询参数均以当前 Controller 实现为准。
+
+### 影响文件
+
+- `src/main/resources/mapper/statistics/StatisticsMapper.xml`
+- `src/main/java/com/tyut/psychological/common/notification/dto/NotificationLogQuery.java`
+- `src/main/java/com/tyut/psychological/common/log/dto/OperationLogQuery.java`
+- `src/main/java/com/tyut/psychological/common/log/controller/AdminLogController.java`
+- `src/test/java/com/tyut/psychological/statistics/mapper/StatisticsMapperXmlTest.java`
+- `src/test/java/com/tyut/psychological/common/log/dto/AdminLogQueryTest.java`
+- `docs/api.md`
+- `docs/progress.md`
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- 统计接口已在后端落地，但前端统计页仍使用 mock 适配函数，需在下一轮联调中切换到真实统计路径与字段。
+

@@ -12,9 +12,9 @@ public class OperationLogQuery {
     private LocalDateTime endTime;
 
     public Integer getPageNum() { return pageNum; }
-    public void setPageNum(Integer pageNum) { this.pageNum = pageNum; }
+    public void setPageNum(Integer pageNum) { this.pageNum = pageNum == null || pageNum < 1 ? 1 : pageNum; }
     public Integer getPageSize() { return pageSize; }
-    public void setPageSize(Integer pageSize) { this.pageSize = pageSize; }
+    public void setPageSize(Integer pageSize) { this.pageSize = pageSize == null || pageSize < 1 ? 10 : pageSize; }
     public int offset() { return (pageNum - 1) * pageSize; }
     public String getOperationType() { return operationType; }
     public void setOperationType(String operationType) { this.operationType = operationType; }
