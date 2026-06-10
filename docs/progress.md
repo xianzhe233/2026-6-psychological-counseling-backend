@@ -774,3 +774,37 @@
 ### 遗留问题
 
 - 若本地数据库仍保留早期非标准表结构，需要重新执行 `sql/init_schema.sql` / `sql/init_data.sql` 或手动对齐 `notification_log` 表字段。
+
+---
+
+## 2026-06-10 qxz review 修复：回退 lcw 阶段7 的旧库兼容改动
+
+### 完成内容
+
+- 在 `dev-qxz` 上同步 `dev` 后复核 lcw 最新 PR #29，确认其中两处通知相关 XML 将仓库统一使用的 `notification_log` 字段错误回退为本地旧库的 `user_id` 写法。
+- 将 `StudentAppointmentMapper.xml` 与 `NotificationLogMapper.xml` 恢复到仓库标准字段：`receiver_user_id`、`send_status`、`send_time`、`related_id`，保持与 `sql/init_schema.sql`、`NotificationLog` 实体和通知服务一致。
+- 将 `FirstVisitAppointmentMapper.xml` 恢复为 `COALESCE(sp.contact_phone, su.phone)`，保证预约审核与初访任务详情优先返回学生档案联系电话而不是仅返回用户表手机号。
+- 新增资源级回归测试，防止后续再次把通知日志与学生通知查询改回旧库字段，或丢失学生档案联系电话回退逻辑。
+
+### 影响文件
+
+- `src/main/resources/mapper/student/StudentAppointmentMapper.xml`
+- `src/main/resources/mapper/common/NotificationLogMapper.xml`
+- `src/main/resources/mapper/appointment/FirstVisitAppointmentMapper.xml`
+- `src/test/java/com/tyut/psychological/student/mapper/StudentAppointmentMapperXmlTest.java`
+- `src/test/java/com/tyut/psychological/common/notification/mapper/NotificationLogMapperXmlTest.java`
+- `src/test/java/com/tyut/psychological/appointment/mapper/FirstVisitAppointmentMapperXmlTest.java`
+- `docs/progress.md`
+
+### 接口变化
+
+- 无新增接口，修复既有学生通知、通知日志写入与预约审核详情查询对仓库标准表结构/字段语义的一致性。
+
+### 验证方式
+
+- `./mvnw test -Dtest=StudentAppointmentMapperXmlTest,NotificationLogMapperXmlTest,FirstVisitAppointmentMapperXmlTest`
+- `./mvnw test`
+
+### 遗留问题
+
+- 若本地数据库仍保留早期手工调整过的旧 `notification_log` 结构，仍需按仓库脚本重新对齐后再联调。

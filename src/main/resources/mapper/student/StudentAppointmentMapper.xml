@@ -112,12 +112,15 @@
     <select id="selectStudentNotifications" resultType="com.tyut.psychological.student.vo.MyNotificationVO">
         SELECT
             id,
-            notify_type AS notifyType,
+            notify_type,
             title,
             content,
-            create_time AS createTime
+            send_status,
+            send_time,
+            related_id,
+            create_time
         FROM notification_log
-        WHERE user_id = #{studentId}
+        WHERE receiver_user_id = #{studentId}
         <if test="notifyType != null and notifyType != ''">
             AND notify_type = #{notifyType}
         </if>
@@ -127,7 +130,7 @@
     <select id="countStudentNotifications" resultType="long">
         SELECT COUNT(*)
         FROM notification_log
-        WHERE user_id = #{studentId}
+        WHERE receiver_user_id = #{studentId}
         <if test="notifyType != null and notifyType != ''">
             AND notify_type = #{notifyType}
         </if>
