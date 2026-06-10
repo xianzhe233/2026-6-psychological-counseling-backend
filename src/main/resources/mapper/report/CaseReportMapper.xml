@@ -81,7 +81,7 @@
         <include refid="caseReportSelect"/>
         <include refid="counselorReportWhere"/>
         ORDER BY cr.update_time DESC
-        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>
 
     <select id="countForCounselor" resultType="long">
@@ -124,7 +124,7 @@
         <include refid="caseReportSelect"/>
         <include refid="adminReportWhere"/>
         ORDER BY cr.submit_time DESC
-        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>
 
     <select id="countForAdmin" resultType="long">

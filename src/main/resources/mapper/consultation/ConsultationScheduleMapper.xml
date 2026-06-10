@@ -248,7 +248,7 @@
         <include refid="counselorScheduleSelect"/>
         <include refid="counselorScheduleWhere"/>
         ORDER BY cs.consultation_date ASC, ts.start_time ASC
-        LIMIT #{query.pageSize} OFFSET ${(query.pageNum - 1) * query.pageSize}
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>
 
     <select id="countForCounselor" resultType="long">

@@ -11,4 +11,5 @@ public class ExtensionAdminQuery {
     public void setPageNum(Integer pageNum) { this.pageNum = pageNum; }
     public Integer getPageSize() { return pageSize; }
     public void setPageSize(Integer pageSize) { this.pageSize = pageSize; }
+    public int getOffset() { return (pageNum - 1) * pageSize; }
 }
