@@ -662,6 +662,43 @@
 
 ---
 
+## 2026-06-10 qxz review 修复：咨询师接口分页与审核规则
+
+### 完成内容
+
+- 复核 zyt 阶段5后端代码后，修复咨询师日程、追加申请、结案报告分页 SQL 中重新出现的 `${...}` 偏移量拼接，统一改回参数化 `offset`，避免注入风险与非法分页边界问题回归。
+- 补强追加咨询申请审核规则：管理员驳回时要求 `reason` 必填，避免出现“驳回成功但无原因”的无效审核记录。
+- 为 `ExtensionRequestService` 补充单元测试，覆盖“驳回原因必填”和“非法分页参数自动归一化”两个场景。
+
+### 影响文件
+
+- `src/main/java/com/tyut/psychological/consultation/dto/CounselorScheduleQuery.java`
+- `src/main/java/com/tyut/psychological/consultation/dto/ExtensionQuery.java`
+- `src/main/java/com/tyut/psychological/consultation/dto/ExtensionAdminQuery.java`
+- `src/main/java/com/tyut/psychological/report/dto/CaseReportQuery.java`
+- `src/main/java/com/tyut/psychological/report/dto/CaseReportAdminQuery.java`
+- `src/main/java/com/tyut/psychological/consultation/service/ExtensionRequestService.java`
+- `src/main/resources/mapper/consultation/ConsultationScheduleMapper.xml`
+- `src/main/resources/mapper/consultation/ExtensionRequestMapper.xml`
+- `src/main/resources/mapper/report/CaseReportMapper.xml`
+- `src/test/java/com/tyut/psychological/consultation/service/ExtensionRequestServiceTest.java`
+- `docs/progress.md`
+
+### 接口变化
+
+- 无新增接口，补强既有咨询师/管理员分页查询与管理员驳回追加申请的参数安全性和业务约束。
+
+### 验证方式
+
+- `./mvnw test`
+
+### 遗留问题
+
+- 当前新增的咨询师接口仍以单元测试和脚本验证为主，完整前后端联调仍待阶段七统一完成。
+- 结案报告仍未实现 Word 导出与下载链路。
+
+---
+
 每完成一个模块，应追加记录：
 
 ```text

@@ -101,7 +101,10 @@ public class ExtensionRequestService {
 
     @Transactional
     public void reject(Long adminUserId, Long requestId, String reason) {
-        audit(adminUserId, requestId, "REJECTED", reason);
+        if (reason == null || reason.isBlank()) {
+            throw new BusinessException(400, "驳回原因不能为空");
+        }
+        audit(adminUserId, requestId, "REJECTED", reason.trim());
     }
 
     private void audit(Long adminUserId, Long requestId, String status, String remark) {
