@@ -1,5 +1,6 @@
 package com.tyut.psychological.statistics.service;
 
+import com.tyut.psychological.common.exception.BusinessException;
 import com.tyut.psychological.statistics.dto.StatisticsQuery;
 import com.tyut.psychological.statistics.mapper.StatisticsMapper;
 import com.tyut.psychological.statistics.vo.ChartSeriesVO;
@@ -10,7 +11,9 @@ import com.tyut.psychological.statistics.vo.OverviewStatsVO;
 import com.tyut.psychological.statistics.vo.PieItemVO;
 import org.springframework.stereotype.Service;
 
+import java.time.Period;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +26,14 @@ public class StatisticsService {
 
     public StatisticsService(StatisticsMapper mapper) { this.mapper = mapper; }
 
-    public OverviewStatsVO overview(StatisticsQuery q) { return mapper.overview(q); }
+    public OverviewStatsVO overview(StatisticsQuery q) {
+        validateRange(q);
+        OverviewStatsVO result = mapper.overview(q);
+        return result == null ? new OverviewStatsVO() : result;
+    }
 
     public ChartVO consultationTrend(StatisticsQuery q) {
+        validateRange(q);
         List<MonthCountVO> raw = mapper.monthlyConsultations(q);
         ChartVO c = new ChartVO();
         c.setXAxis(monthAxis(q));
@@ -37,6 +45,7 @@ public class StatisticsService {
     }
 
     public ChartVO completionTrend(StatisticsQuery q) {
+        validateRange(q);
         List<MonthCountVO> raw = mapper.monthlyReports(q);
         ChartVO c = new ChartVO();
         c.setXAxis(monthAxis(q));
@@ -48,6 +57,7 @@ public class StatisticsService {
     }
 
     public ChartVO newStudentTrend(StatisticsQuery q) {
+        validateRange(q);
         List<MonthCountVO> raw = mapper.monthlyNewStudents(q);
         ChartVO c = new ChartVO();
         c.setXAxis(monthAxis(q));
@@ -59,14 +69,17 @@ public class StatisticsService {
     }
 
     public List<PieItemVO> consultationDistribution(StatisticsQuery q) {
+        validateRange(q);
         return mapper.consultationDistribution(q);
     }
 
     public List<PieItemVO> problemTypeDistribution(StatisticsQuery q) {
+        validateRange(q);
         return mapper.problemTypeDistribution(q);
     }
 
     public ChartVO workload(StatisticsQuery q) {
+        validateRange(q);
         List<CounselorWorkloadVO> raw = mapper.counselorWorkload(q);
         ChartVO c = new ChartVO();
         for (CounselorWorkloadVO w : raw) c.getXAxis().add(w.getCounselorName());
@@ -84,12 +97,24 @@ public class StatisticsService {
     }
 
     public List<CounselorWorkloadVO> workloadTable(StatisticsQuery q) {
+        validateRange(q);
         return mapper.counselorWorkload(q);
     }
 
     private List<String> monthAxis(StatisticsQuery q) {
-        return q.getStartDate().datesUntil(q.getEndDate().plusMonths(1), java.time.temporal.ChronoUnit.MONTHS)
+        return q.getStartDate()
+                .withDayOfMonth(1)
+                .datesUntil(q.getEndDate().with(TemporalAdjusters.firstDayOfNextMonth()), Period.ofMonths(1))
                 .map(MONTH_FMT::format).collect(Collectors.toList());
+    }
+
+    private void validateRange(StatisticsQuery q) {
+        if (q == null || q.getStartDate() == null || q.getEndDate() == null) {
+            throw new BusinessException(400, "统计开始日期和结束日期不能为空");
+        }
+        if (q.getStartDate().isAfter(q.getEndDate())) {
+            throw new BusinessException(400, "开始日期不能晚于结束日期");
+        }
     }
 
     private Map<String, Long> toMap(List<MonthCountVO> raw) {
