@@ -11,7 +11,7 @@ public final class DownloadUtils {
     private DownloadUtils() {}
 
     public static void writeAttachment(HttpServletResponse response, String fileName, byte[] content) throws IOException {
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.resetBuffer();
         response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         ContentDisposition disposition = ContentDisposition.attachment()
                 .filename(fileName, StandardCharsets.UTF_8).build();
