@@ -1054,93 +1054,129 @@ GET /api/admin/case-reports/export-batch
 
 ## 12. 统计分析
 
-### 12.1 总览指标
+### 12.1 通用查询参数
+
+统计接口均要求 ADMIN 角色，并通过日期范围查询：
+
+| 参数 | 类型 | 必填 | 说明 |
+|:--:|:--:|:--:|:--|
+| startDate | date | 是 | 开始日期，格式 `yyyy-MM-dd` |
+| endDate | date | 是 | 结束日期，格式 `yyyy-MM-dd` |
+
+### 12.2 总览指标
 
 ```http
 GET /api/admin/statistics/overview?startDate=2026-06-01&endDate=2026-06-30
 ```
 
-角色：ADMIN。
-
 响应：
 
 ```json
 {
-  "firstVisitAppointmentCount": 120,
-  "pendingAppointmentCount": 18,
-  "highRiskStudentCount": 5,
-  "waitingQueueCount": 12,
-  "consultationScheduleCount": 80,
-  "closedCaseCount": 10
+  "totalConsultations": 80,
+  "totalStudents": 35,
+  "completedReports": 10,
+  "activeCounselors": 4
 }
 ```
 
-### 12.2 月度趋势
+### 12.3 咨询量趋势
 
 ```http
-GET /api/admin/statistics/monthly-trend
+GET /api/admin/statistics/consultation-trend?startDate=2026-01-01&endDate=2026-06-30
 ```
 
-响应：
+响应格式：
 
 ```json
 {
   "xAxis": ["2026-01", "2026-02"],
   "series": [
-    { "name": "初访预约数", "data": [20, 35] },
-    { "name": "正式咨询数", "data": [10, 28] }
+    { "name": "咨询量", "data": [10, 28] }
   ]
 }
 ```
 
-### 12.3 问题类型分布
+### 12.4 结案量趋势
 
 ```http
-GET /api/admin/statistics/problem-types
+GET /api/admin/statistics/completion-trend?startDate=2026-01-01&endDate=2026-06-30
+```
+
+响应格式同 `ChartVO`。
+
+### 12.5 新增学生趋势
+
+```http
+GET /api/admin/statistics/new-student-trend?startDate=2026-01-01&endDate=2026-06-30
+```
+
+响应格式同 `ChartVO`。
+
+### 12.6 咨询分布
+
+```http
+GET /api/admin/statistics/consultation-distribution?startDate=2026-06-01&endDate=2026-06-30
+```
+
+响应格式：
+
+```json
+[
+  { "name": "软件学院", "value": 30 },
+  { "name": "经济管理学院", "value": 18 }
+]
+```
+
+### 12.7 问题类型分布
+
+```http
+GET /api/admin/statistics/problem-type-distribution?startDate=2026-06-01&endDate=2026-06-30
+```
+
+响应格式同饼图数组。
+
+### 12.8 咨询师工作量图表
+
+```http
+GET /api/admin/statistics/workload-chart?startDate=2026-06-01&endDate=2026-06-30
+```
+
+响应格式：
+
+```json
+{
+  "xAxis": ["李老师", "王老师"],
+  "series": [
+    { "name": "咨询量", "data": [25, 20] },
+    { "name": "结案量", "data": [8, 6] }
+  ]
+}
+```
+
+### 12.9 咨询师工作量表格
+
+```http
+GET /api/admin/statistics/workload-table?startDate=2026-06-01&endDate=2026-06-30
 ```
 
 响应：
 
 ```json
 [
-  { "name": "学业压力", "value": 30 },
-  { "name": "人际关系", "value": 18 }
+  {
+    "counselorId": 1,
+    "counselorName": "李老师",
+    "consultationCount": 25,
+    "studentCount": 16,
+    "reportCount": 8
+  }
 ]
 ```
 
-### 12.4 危机等级分布
+### 12.10 统计导出
 
-```http
-GET /api/admin/statistics/crisis-levels
-```
-
-响应格式同柱状图。
-
-### 12.5 咨询师工作量
-
-```http
-GET /api/admin/statistics/counselor-workload
-```
-
-响应：
-
-```json
-{
-  "xAxis": ["李老师", "王老师"],
-  "series": [
-    { "name": "咨询人次", "data": [25, 20] },
-    { "name": "咨询总时长", "data": [1250, 1000] }
-  ]
-}
-```
-
-### 12.6 统计 Excel 导出
-
-```http
-GET /api/admin/statistics/export-excel
-```
-
-增强功能，可后做。
+当前后端未暴露统计 Excel 导出接口；如需作为增强功能，需另行补充接口和实现。
 
 ---
 
@@ -1164,7 +1200,7 @@ GET /api/admin/logs/operations
 
 角色：ADMIN。
 
-参数：`pageNum`、`pageSize`、`operatorName`、`moduleName`、`operationType`、`resultStatus`、`startTime`、`endTime`。
+参数：`pageNum`、`pageSize`、`keyword`、`operationType`、`resultStatus`、`startTime`、`endTime`。
 
 ---
 

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.profile.mapper.StaffProfileMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.profile.entity.StaffProfile">
+        SELECT * FROM staff_profile WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultType="com.tyut.psychological.profile.entity.StaffProfile">
+        SELECT * FROM staff_profile WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO staff_profile (user_id, staff_no, staff_type, title, specialty, introduction, max_daily_appointments, status, create_time)
+        VALUES (#{userId}, #{staffNo}, #{staffType}, #{title}, #{specialty}, #{introduction}, #{maxDailyAppointments}, #{status}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE staff_profile
+        <set>
+            <if test="staffNo != null">staff_no = #{staffNo},</if>
+            <if test="staffType != null">staff_type = #{staffType},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="specialty != null">specialty = #{specialty},</if>
+            <if test="introduction != null">introduction = #{introduction},</if>
+            <if test="maxDailyAppointments != null">max_daily_appointments = #{maxDailyAppointments},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageStaff" resultType="com.tyut.psychological.profile.vo.StaffVO">
+        SELECT sp.id, sp.user_id, su.username, sp.staff_no, su.real_name, su.phone, sp.staff_type,
+               sp.title, sp.specialty, sp.introduction, sp.max_daily_appointments, sp.status
+        FROM staff_profile sp
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        WHERE 1=1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR sp.staff_no LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR su.phone LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.staffType != null and query.staffType != ''">
+            AND sp.staff_type = #{query.staffType}
+        </if>
+        <if test="query.status != null">
+            AND sp.status = #{query.status}
+        </if>
+        ORDER BY sp.create_time DESC
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
+    </select>
+
+    <select id="countStaff" resultType="long">
+        SELECT COUNT(*)
+        FROM staff_profile sp
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        WHERE 1=1
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (su.real_name LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR sp.staff_no LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR su.phone LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.staffType != null and query.staffType != ''">
+            AND sp.staff_type = #{query.staffType}
+        </if>
+        <if test="query.status != null">
+            AND sp.status = #{query.status}
+        </if>
+    </select>
+
+    <select id="selectOptions" resultType="com.tyut.psychological.common.vo.OptionVO">
+        SELECT su.real_name AS label, sp.id AS value
+        FROM staff_profile sp
+        LEFT JOIN sys_user su ON sp.user_id = su.id
+        WHERE sp.status = 1
+        <if test="staffType != null and staffType != ''">
+            AND sp.staff_type = #{staffType}
+        </if>
+        ORDER BY sp.staff_no
+    </select>
+</mapper>

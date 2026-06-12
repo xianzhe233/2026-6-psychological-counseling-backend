@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.interviewer.mapper.FirstVisitResultMapper">
+
+    <!-- 根据预约ID查询初访结果 -->
+    <select id="selectByAppointmentId" resultType="com.tyut.psychological.interviewer.entity.FirstVisitResult">
+        SELECT * FROM first_visit_result WHERE appointment_id = #{appointmentId}
+    </select>
+
+    <!-- 插入初访结果 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO first_visit_result (
+            appointment_id, interviewer_id, crisis_level, problem_type_id,
+            interview_time, conclusion, summary, next_action, create_time
+        ) VALUES (
+            #{appointmentId}, #{interviewerId}, #{crisisLevel}, #{problemTypeId},
+            #{interviewTime}, #{conclusion}, #{summary}, #{nextAction}, NOW()
+        )
+    </insert>
+
+    <!-- 更新初访结果 -->
+    <update id="update">
+        UPDATE first_visit_result
+        <set>
+            <if test="crisisLevel != null">crisis_level = #{crisisLevel},</if>
+            <if test="problemTypeId != null">problem_type_id = #{problemTypeId},</if>
+            <if test="interviewTime != null">interview_time = #{interviewTime},</if>
+            <if test="conclusion != null">conclusion = #{conclusion},</if>
+            <if test="summary != null">summary = #{summary},</if>
+            <if test="nextAction != null">next_action = #{nextAction},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

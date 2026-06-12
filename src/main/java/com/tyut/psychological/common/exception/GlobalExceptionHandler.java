@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public Result<Void> handleBusinessException(BusinessException exception) {
+    public Result<Object> handleBusinessException(BusinessException exception) {
+        if (exception.getData() != null) {
+            return new Result<>(exception.getCode(), exception.getMessage(), exception.getData());
+        }
         return Result.fail(exception.getCode(), exception.getMessage());
     }
 

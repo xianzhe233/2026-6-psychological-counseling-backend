@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.common.notification.mapper.NotificationLogMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification_log (
+            receiver_user_id, receiver_name, phone, notify_type, title,
+            content, send_status, send_time, related_id, create_time
+        ) VALUES (
+            #{receiverUserId}, #{receiverName}, #{phone}, #{notifyType}, #{title},
+            #{content}, #{sendStatus}, #{sendTime}, #{relatedId}, NOW()
+        )
+    </insert>
+
+    <select id="selectByStudentId" resultType="com.tyut.psychological.common.notification.vo.StudentNotificationVO">
+        SELECT 
+            id,
+            title,
+            content,
+            notify_type,
+            send_time,
+            0 AS read_status
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+        ORDER BY send_time DESC
+    </select>
+
+    <select id="countByStudentId" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_log
+        WHERE receiver_user_id = #{studentId}
+    </select>
+
+    <sql id="adminWhere">
+        <if test="q.notifyType != null and q.notifyType != ''">
+            AND notify_type = #{q.notifyType}
+        </if>
+        <if test="q.sendStatus != null and q.sendStatus != ''">
+            AND send_status = #{q.sendStatus}
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (receiver_name LIKE CONCAT('%', #{q.keyword}, '%')
+                 OR title LIKE CONCAT('%', #{q.keyword}, '%'))
+        </if>
+        <if test="q.startTime != null">
+            AND create_time &gt;= #{q.startTime}
+        </if>
+        <if test="q.endTime != null">
+            AND create_time &lt;= #{q.endTime}
+        </if>
+    </sql>
+
+    <select id="pageForAdmin" resultType="com.tyut.psychological.common.notification.vo.NotificationLogVO">
+        SELECT id, receiver_name AS receiverName, phone,
+               notify_type AS notifyType, title, content,
+               send_status AS sendStatus, send_time AS sendTime
+        FROM notification_log
+        WHERE 1=1 <include refid="adminWhere"/>
+        ORDER BY create_time DESC
+        LIMIT #{q.pageSize} OFFSET #{q.offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*) FROM notification_log WHERE 1=1 <include refid="adminWhere"/>
+    </select>
+
+</mapper>

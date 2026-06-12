@@ -537,7 +537,7 @@ else LOW
 
 ```yaml
 server:
-  port: 8080
+  port: 24681
   servlet:
     session:
       timeout: 2h
@@ -582,7 +582,18 @@ app:
 
 ---
 
-## 14. 与前端协作约定
+## 14. 当前落地结构补充（2026-06-07）
+
+当前代码在阶段5整理后，实际已落地以下补充结构：
+
+1. 预约审核相关代码当前放在 `appointment/` 包下，而不是文档前文示意中的 `firstvisit/` 包。
+2. 操作日志与通知日志当前放在 `common/log/` 与 `common/notification/` 下，已包含 entity、mapper、service。
+3. 值班管理在既有 `schedule/` 模块内新增 `DutyScheduleController`、`DutyScheduleService`、`DutyScheduleMapper` 与对应 DTO/VO/entity/XML。
+4. `@MapperScan` 当前使用 `com.tyut.psychological.**.mapper` 风格的全包扫描思路，实际代码为 `com.tyut.psychological` 下所有 mapper 包统一纳入扫描。
+
+以上为当前实际工程结构，后续如有时间可再与文档中的目标模块命名进一步收敛。
+
+## 15. 与前端协作约定
 
 1. 所有接口返回 `Result<T>`。
 2. 所有分页返回 `PageResult<T>`。

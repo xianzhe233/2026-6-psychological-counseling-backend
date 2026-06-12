@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.consultation.mapper.ConsultationRecordMapper">
+
+    <select id="selectByScheduleId" resultType="com.tyut.psychological.consultation.vo.ConsultationRecordVO">
+        SELECT
+            id,
+            schedule_id AS scheduleId,
+            record_status AS recordStatus,
+            consultation_time AS consultationTime,
+            content_summary AS contentSummary,
+            next_plan AS nextPlan,
+            need_close AS needClose,
+            update_time AS saveTime
+        FROM consultation_record
+        WHERE schedule_id = #{scheduleId}
+    </select>
+
+    <select id="selectEntityByScheduleId" resultType="com.tyut.psychological.consultation.entity.ConsultationRecord">
+        SELECT * FROM consultation_record WHERE schedule_id = #{scheduleId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO consultation_record (
+            schedule_id, student_id, counselor_id, session_no,
+            consultation_time, record_status, content_summary, next_plan, need_close, create_time
+        ) VALUES (
+            #{scheduleId}, #{studentId}, #{counselorId}, #{sessionNo},
+            #{consultationTime}, #{recordStatus}, #{contentSummary}, #{nextPlan}, #{needClose}, NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE consultation_record
+        SET consultation_time = #{consultationTime},
+            record_status = #{recordStatus},
+            content_summary = #{contentSummary},
+            next_plan = #{nextPlan},
+            need_close = #{needClose},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

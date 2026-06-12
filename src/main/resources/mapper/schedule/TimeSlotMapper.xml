@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tyut.psychological.schedule.mapper.TimeSlotMapper">
+
+    <select id="selectById" resultType="com.tyut.psychological.schedule.entity.TimeSlot">
+        SELECT * FROM time_slot WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO time_slot (slot_name, start_time, end_time, interval_minutes, status, create_time)
+        VALUES (#{slotName}, #{startTime}, #{endTime}, #{intervalMinutes}, #{status}, NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE time_slot
+        <set>
+            <if test="slotName != null">slot_name = #{slotName},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="intervalMinutes != null">interval_minutes = #{intervalMinutes},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageTimeSlots" resultType="com.tyut.psychological.schedule.vo.TimeSlotVO">
+        SELECT id, slot_name, start_time, end_time, interval_minutes, status
+        FROM time_slot
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND slot_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY start_time ASC
+    </select>
+
+    <select id="countTimeSlots" resultType="long">
+        SELECT COUNT(*) FROM time_slot
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND slot_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <select id="selectOptions" resultType="com.tyut.psychological.common.vo.OptionVO">
+        SELECT CONCAT(slot_name, ' ', start_time, '-', end_time) AS label, id AS value
+        FROM time_slot WHERE status = 1 ORDER BY start_time ASC
+    </select>
+</mapper>
